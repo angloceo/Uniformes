@@ -12,6 +12,7 @@ import { initialUniforms, type Uniform } from '@/lib/mock-data';
 import { Settings2, Save, AlertCircle, Edit3, Image as ImageIcon, ShoppingBag } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
+import { siteConfig } from '@/config/site'; // Import siteConfig
 
 export default function AdminSettingsPage() {
   const { toast } = useToast();
