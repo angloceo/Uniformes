@@ -81,7 +81,7 @@ const navItemsBase: NavItem[] = [
     adminOnly: true,
     submenu: [
         { title: "Configuraciones", href: "/admin/settings", icon: Settings2 },
-        // { title: "Costos y Ganancias", href: "/admin/profit-management", icon: TrendingUp }, // Removed as per request
+        { title: "Costos y Ganancias", href: "/admin/profit-management", icon: TrendingUp },
     ]
   },
 ];
