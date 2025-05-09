@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { initialUniforms, type Uniform, type UniformSize } from '@/lib/mock-data';
 import { DollarSign, TrendingUp, Save, AlertCircle, Info, Filter } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
 
 // Make initialUniforms mutable for this page (in a real app, this would be API calls)
 let mutableUniforms: Uniform[] = JSON.parse(JSON.stringify(initialUniforms));
@@ -92,12 +93,11 @@ export default function ProfitManagementPage() {
     return uniforms.filter(uni => uni.category === selectedCategory);
   }, [uniforms, selectedCategory]);
 
-  const potentialProfitData = useMemo(() => {
+  const overallPotentialProfitData = useMemo(() => {
     let totalPotentialProfit = 0;
     let totalStockValueAtCost = 0;
     let totalStockValueAtSale = 0;
 
-    // Calculate profit based on all uniforms, not just filtered ones
     uniforms.forEach(uni => { 
       uni.sizes.forEach(s => {
         if (s.stock > 0) {
@@ -110,6 +110,27 @@ export default function ProfitManagementPage() {
     });
     return { totalPotentialProfit, totalStockValueAtCost, totalStockValueAtSale };
   }, [uniforms]);
+
+  const categorySpecificPotentialProfitData = useMemo(() => {
+    if (selectedCategory === ALL_CATEGORIES_VALUE) {
+      return { totalPotentialProfit: 0, totalStockValueAtCost: 0, totalStockValueAtSale: 0, category: null };
+    }
+    let totalPotentialProfit = 0;
+    let totalStockValueAtCost = 0;
+    let totalStockValueAtSale = 0;
+
+    filteredUniformsForDisplay.forEach(uni => {
+      uni.sizes.forEach(s => {
+        if (s.stock > 0) {
+          const profitPerUnit = s.price - s.cost;
+          totalPotentialProfit += profitPerUnit * s.stock;
+          totalStockValueAtCost += s.cost * s.stock;
+          totalStockValueAtSale += s.price * s.stock;
+        }
+      });
+    });
+    return { totalPotentialProfit, totalStockValueAtCost, totalStockValueAtSale, category: selectedCategory };
+  }, [filteredUniformsForDisplay, selectedCategory]);
 
 
   return (
@@ -236,36 +257,70 @@ export default function ProfitManagementPage() {
         <CardHeader>
           <CardTitle className="text-xl flex items-center">
             <TrendingUp className="mr-2 h-5 w-5 text-primary" />
-            Reporte de Ganancia Potencial (Stock Actual)
+            Reporte de Ganancia Potencial
           </CardTitle>
           <CardDescription>
-            Estimación de ganancias basada en el inventario actual y los precios definidos.
+            Estimación de ganancias basada en el inventario actual y los precios/costos definidos en la tabla de edición.
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-3">
-           <div className="flex justify-between items-center p-3 bg-muted rounded-md">
-            <span className="font-medium text-foreground">Valor Total del Stock (al costo):</span>
-            <span className="font-semibold text-lg text-foreground">
-              {potentialProfitData.totalStockValueAtCost.toLocaleString('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 })}
-            </span>
+        <CardContent className="space-y-6">
+          {selectedCategory !== ALL_CATEGORIES_VALUE && categorySpecificPotentialProfitData.category && (
+            <div className="space-y-3 p-4 border rounded-md bg-muted/50 shadow">
+              <h3 className="text-lg font-semibold text-foreground">
+                Detalle para Categoría: <span className="text-primary">{categorySpecificPotentialProfitData.category}</span>
+              </h3>
+              <div className="flex justify-between items-center p-3 bg-background rounded-md shadow-sm">
+                <span className="font-medium text-foreground">Valor Stock (al costo) - Categoría:</span>
+                <span className="font-semibold text-md text-foreground">
+                  {categorySpecificPotentialProfitData.totalStockValueAtCost.toLocaleString('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 })}
+                </span>
+              </div>
+              <div className="flex justify-between items-center p-3 bg-background rounded-md shadow-sm">
+                <span className="font-medium text-foreground">Valor Stock (a la venta) - Categoría:</span>
+                <span className="font-semibold text-md text-foreground">
+                  {categorySpecificPotentialProfitData.totalStockValueAtSale.toLocaleString('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 })}
+                </span>
+              </div>
+              <div className="flex justify-between items-center p-3 bg-primary/10 rounded-md border border-primary/50">
+                <span className="font-medium text-primary-dark">Ganancia Potencial - Categoría:</span>
+                <span className="font-bold text-lg text-primary">
+                  {categorySpecificPotentialProfitData.totalPotentialProfit.toLocaleString('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 })}
+                </span>
+              </div>
+            </div>
+          )}
+
+          <div className="space-y-3">
+            {selectedCategory !== ALL_CATEGORIES_VALUE && <Separator className="my-4" />}
+            <h3 className="text-lg font-semibold text-foreground pt-2">
+              Totales Generales (Todas las Prendas)
+            </h3>
+            <div className="flex justify-between items-center p-3 bg-muted rounded-md">
+              <span className="font-medium text-foreground">Valor Total del Stock (al costo):</span>
+              <span className="font-semibold text-lg text-foreground">
+                {overallPotentialProfitData.totalStockValueAtCost.toLocaleString('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 })}
+              </span>
+            </div>
+            <div className="flex justify-between items-center p-3 bg-muted rounded-md">
+              <span className="font-medium text-foreground">Valor Total del Stock (a la venta):</span>
+              <span className="font-semibold text-lg text-foreground">
+                {overallPotentialProfitData.totalStockValueAtSale.toLocaleString('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 })}
+              </span>
+            </div>
+            <div className="flex justify-between items-center p-4 bg-primary/10 rounded-md border border-primary">
+              <span className="font-medium text-primary-dark">Ganancia Potencial Total General:</span>
+              <span className="font-bold text-xl text-primary">
+                {overallPotentialProfitData.totalPotentialProfit.toLocaleString('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 })}
+              </span>
+            </div>
           </div>
-          <div className="flex justify-between items-center p-3 bg-muted rounded-md">
-            <span className="font-medium text-foreground">Valor Total del Stock (a la venta):</span>
-            <span className="font-semibold text-lg text-foreground">
-              {potentialProfitData.totalStockValueAtSale.toLocaleString('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 })}
-            </span>
-          </div>
-           <div className="flex justify-between items-center p-4 bg-primary/10 rounded-md border border-primary">
-            <span className="font-medium text-primary-dark">Ganancia Potencial Total:</span>
-            <span className="font-bold text-xl text-primary">
-              {potentialProfitData.totalPotentialProfit.toLocaleString('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 })}
-            </span>
-          </div>
-           <div className="pt-2 text-xs text-muted-foreground flex items-start">
-            <Info size={14} className="mr-1.5 mt-0.5 shrink-0" />
+          
+          <div className="pt-4 text-xs text-muted-foreground flex items-start">
+            <Info size={16} className="mr-1.5 mt-0.5 shrink-0" />
             <span>
               Este reporte es una estimación y no considera ventas pasadas ni otros costos operativos.
               La ganancia se calcula como (Precio de Venta - Costo) * Stock Actual para cada ítem.
+              Los precios y costos utilizados para este cálculo son los que se muestran actualmente en la tabla de edición, independientemente de si han sido guardados.
             </span>
           </div>
         </CardContent>
