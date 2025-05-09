@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -5,35 +6,78 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Archive, BarChart3, DollarSign, PackagePlus, ShoppingCart, Users, AlertTriangle, CheckCircle, Clock } from "lucide-react";
 import { useEffect, useState } from "react";
-import { initialUniforms, mockSales, type Uniform, type Sale } from "@/lib/mock-data";
+import { initialUniforms as defaultUniforms, mockSales as defaultMockSales, type Uniform, type Sale } from "@/lib/mock-data";
+
+// Function to safely parse JSON from localStorage
+const getFromLocalStorage = <T,>(key: string, defaultValue: T): T => {
+  if (typeof window === 'undefined') {
+    return defaultValue;
+  }
+  const storedValue = localStorage.getItem(key);
+  if (storedValue) {
+    try {
+      return JSON.parse(storedValue) as T;
+    } catch (error) {
+      console.error(`Error parsing localStorage item ${key}:`, error);
+      return defaultValue;
+    }
+  }
+  return defaultValue;
+};
+
 
 const getDashboardData = async () => {
+  // Simulate API delay
   await new Promise(resolve => setTimeout(resolve, 500));
+
+  const currentUniforms = getFromLocalStorage<Uniform[]>('updatedUniformsData', defaultUniforms);
+  const currentSales = getFromLocalStorage<Sale[]>('mockSales', defaultMockSales);
   
   const today = new Date().toISOString().split('T')[0];
-  const salesToday = mockSales.filter(sale => sale.date.startsWith(today));
+  const salesToday = currentSales.filter(sale => sale.date.startsWith(today));
   const totalSalesToday = salesToday.reduce((sum, sale) => sum + sale.totalAmount, 0);
   const itemsSoldCount = salesToday.reduce((sum, sale) => sum + sale.items.reduce((itemSum, item) => itemSum + item.quantity, 0), 0);
 
-
   let criticalInventoryCount = 0;
-  initialUniforms.forEach(uniform => {
+  currentUniforms.forEach(uniform => {
     uniform.sizes.forEach(size => {
-      if (size.stock <= size.lowStockThreshold && size.stock > 0) {
+      if (size.stock > 0 && size.stock <= size.lowStockThreshold) { // Only count if stock > 0
         criticalInventoryCount++;
       }
     });
   });
 
+  // Generate recent activity from sales for more dynamic content
+  const recentActivityFromSales = salesToday.slice(-2).map(sale => ({
+    type: "Venta",
+    description: `Venta #${sale.id.slice(-5)} registrada (${sale.customerName})`,
+    time: new Date(sale.date).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' }),
+    icon: ShoppingCart
+  }));
+
+  const sampleInventoryActivity = currentUniforms
+    .flatMap(u => u.sizes.map(s => ({ ...s, name: u.name })))
+    .filter(s => s.stock > 0 && s.stock <= s.lowStockThreshold)
+    .slice(0, 1) // Take one critical item for demo
+    .map(item => ({
+      type: "Inventario",
+      description: `Stock de '${item.name} - ${item.size}' bajo (${item.stock} unidades)`,
+      time: "Reciente",
+      icon: AlertTriangle,
+    }));
+
+  // Combine and sort recent activities (simplistic sort by presence)
+  const combinedActivity = [...recentActivityFromSales, ...sampleInventoryActivity].slice(0,3);
+
+
   return {
     totalSalesToday,
-    itemsSoldToday: itemsSoldCount, // Use itemsSoldCount calculated above
+    itemsSoldToday: itemsSoldCount,
     criticalInventoryCount,
-    recentActivity: [ // Sample recent activity
-      { type: "Venta", description: "Venta #00124 registrada", time: "Hace 10 minutos", icon: ShoppingCart },
-      { type: "Inventario", description: "Stock de 'Camiseta Polo (Hombre) - M' bajo", time: "Hace 1 hora", icon: AlertTriangle },
-      { type: "Ingreso", description: "Ingreso de 20 'Camiseta Deporte - S'", time: "Hace 3 horas", icon: PackagePlus },
-    ]
+    recentActivity: combinedActivity.length > 0 ? combinedActivity : [
+        { type: "Sistema", description: "No hay actividad reciente para mostrar.", time: "", icon: CheckCircle }
+    ],
+    totalUniformTypes: currentUniforms.length,
   };
 };
 
@@ -42,23 +86,31 @@ interface DashboardStats {
   itemsSoldToday: number;
   criticalInventoryCount: number;
   recentActivity: { type: string, description: string, time: string, icon: React.ElementType }[];
+  totalUniformTypes: number;
 }
 
 export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      const data = await getDashboardData();
-      setStats(data);
-      setLoading(false);
-    };
-    fetchData();
+    setMounted(true);
   }, []);
 
-  if (loading || !stats) {
+  useEffect(() => {
+    if (mounted) {
+      const fetchData = async () => {
+        setLoading(true);
+        const data = await getDashboardData();
+        setStats(data);
+        setLoading(false);
+      };
+      fetchData();
+    }
+  }, [mounted]);
+
+  if (!mounted || loading || !stats) {
     return (
       <div className="space-y-6">
         <h1 className="text-3xl font-bold tracking-tight text-foreground">Panel de Control</h1>
@@ -91,7 +143,7 @@ export default function DashboardPage() {
   const summaryCards = [
     { title: "Ventas del Día", value: `COP ${stats.totalSalesToday.toLocaleString('es-CO')}`, description: `${stats.itemsSoldToday} prendas vendidas hoy`, icon: DollarSign, color: "text-green-500" },
     { title: "Inventario Crítico", value: `${stats.criticalInventoryCount} Ítems`, description: "Prendas con bajo stock", icon: AlertTriangle, color: "text-orange-500" },
-    { title: "Total Prendas (Tipos)", value: `${initialUniforms.length} Tipos`, description: "Variedad de uniformes disponibles", icon: Archive, color: "text-blue-500" },
+    { title: "Total Prendas (Tipos)", value: `${stats.totalUniformTypes} Tipos`, description: "Variedad de uniformes disponibles", icon: Archive, color: "text-blue-500" },
   ];
 
   const quickActions = [
@@ -155,7 +207,7 @@ export default function DashboardPage() {
                   </div>
                 </li>
               ))}
-               {stats.recentActivity.length === 0 && (
+               {stats.recentActivity.length === 0 && ( // Should not happen due to fallback
                 <p className="text-sm text-muted-foreground">No hay actividad reciente.</p>
               )}
             </ul>
@@ -165,3 +217,4 @@ export default function DashboardPage() {
     </div>
   );
 }
+

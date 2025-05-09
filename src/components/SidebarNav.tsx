@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -15,13 +16,15 @@ import {
   ShoppingCart,
   Archive,
   PackagePlus,
-  Users,
   DollarSign,
   Boxes,
   LineChart,
   ReceiptText,
   LogOut,
-  Cog, // Added Cog for Admin
+  Cog,
+  ShieldCheck, // For general admin/settings
+  TrendingUp, // For profit management
+  Settings2, // More specific for settings
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { AppLogo } from "./AppLogo";
@@ -38,9 +41,10 @@ interface NavItem {
   external?: boolean;
   label?: string;
   submenu?: NavItem[];
+  adminOnly?: boolean;
 }
 
-const navItems: NavItem[] = [
+const navItemsBase: NavItem[] = [
   {
     title: "Dashboard",
     href: "/dashboard",
@@ -48,7 +52,7 @@ const navItems: NavItem[] = [
   },
   {
     title: "Ventas",
-    href: "/sales",
+    href: "/sales", // Parent path for active state
     icon: DollarSign,
     submenu: [
       { title: "Registrar Venta", href: "/sales/new", icon: ShoppingCart },
@@ -57,7 +61,7 @@ const navItems: NavItem[] = [
   },
   {
     title: "Inventario",
-    href: "/inventory",
+    href: "/inventory", // Parent path for active state
     icon: Boxes,
     submenu: [
       { title: "Ver Stock", href: "/inventory", icon: Archive },
@@ -72,8 +76,13 @@ const navItems: NavItem[] = [
   },
   {
     title: "Administración",
-    href: "/admin",
-    icon: Cog, 
+    href: "/admin", // Parent path for active state
+    icon: ShieldCheck, 
+    adminOnly: true,
+    submenu: [
+        { title: "Configuraciones", href: "/admin/settings", icon: Settings2 },
+        { title: "Costos y Ganancias", href: "/admin/profit-management", icon: TrendingUp },
+    ]
   },
 ];
 
@@ -98,6 +107,13 @@ export function SidebarNav() {
     router.push('/login');
   };
   
+  const filteredNavItems = navItemsBase.filter(item => {
+    if (item.adminOnly) {
+      return userRole === 'admin';
+    }
+    return true;
+  });
+
   if (!mounted) {
      return null; 
   }
@@ -112,13 +128,13 @@ export function SidebarNav() {
         </div>
         <div className="flex-1 overflow-y-auto overflow-x-hidden p-2 space-y-1">
         <SidebarMenu>
-          {navItems.map((item) =>
+          {filteredNavItems.map((item) =>
             item.submenu ? (
               <SidebarMenuItem key={item.title} className="relative">
                 <SidebarMenuButton
                   isActive={pathname.startsWith(item.href)}
                   tooltip={{children: item.title, side: 'right', align: 'center' }}
-                  className="justify-between"
+                  className="justify-between" // Keep for potential arrow if Radix supports it natively
                   disabled={item.disabled}
                   aria-disabled={item.disabled}
                 >
@@ -170,7 +186,7 @@ export function SidebarNav() {
             </div>
           )}
           <Button variant="ghost" className="w-full justify-start gap-2 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground" onClick={handleLogout}>
-            <LogOut className="h-4 w-4" /> {/* Changed icon to LogOut */}
+            <LogOut className="h-4 w-4" />
             Cerrar Sesión
           </Button>
         </div>

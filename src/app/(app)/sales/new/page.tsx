@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, type ChangeEvent } from 'react';
@@ -10,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import { initialUniforms, type Uniform, type SaleItem, type PaymentMethod } from '@/lib/mock-data';
+import { initialUniforms, type Uniform, type SaleItem, type PaymentMethod, type Sale } from '@/lib/mock-data';
 import { ShoppingCart, PlusCircle, Trash2, ArrowLeft, FileSignature, UploadCloud } from 'lucide-react';
 
 export default function NewSalePage() {
@@ -32,7 +33,14 @@ export default function NewSalePage() {
 
   useEffect(() => {
     setMounted(true);
-    setUniformsData(initialUniforms);
+    // In a real app, fetch this data. For demo, use mutable mock data.
+    // It's important that this reflects any changes made in profit-management
+    // For simplicity, we'll assume initialUniforms is the "live" data source
+    // or that profit-management updates a shared state/context if this were more complex.
+    // For this demo, we'll just use initialUniforms as potentially modified by admin page.
+    const liveUniforms = typeof window !== 'undefined' ? (JSON.parse(localStorage.getItem('updatedUniformsData') || JSON.stringify(initialUniforms))) : initialUniforms;
+    setUniformsData(liveUniforms);
+
   }, []);
 
   const selectedUniformForForm = uniformsData.find(u => u.id === currentUniformId);
@@ -55,7 +63,9 @@ export default function NewSalePage() {
       size: currentSize,
       quantity: Number(currentQuantity),
       unitPrice: selectedUniformSizeForForm.price,
+      unitCost: selectedUniformSizeForForm.cost, // Capture cost at time of sale
       totalPrice: selectedUniformSizeForForm.price * Number(currentQuantity),
+      totalCost: selectedUniformSizeForForm.cost * Number(currentQuantity), // Capture total cost
     };
 
     setSaleItems(prevItems => {
@@ -64,6 +74,7 @@ export default function NewSalePage() {
         const updatedItems = [...prevItems];
         updatedItems[existingItemIndex].quantity += newItem.quantity;
         updatedItems[existingItemIndex].totalPrice += newItem.totalPrice;
+        updatedItems[existingItemIndex].totalCost += newItem.totalCost; // Update total cost
         return updatedItems;
       }
       return [...prevItems, newItem];
@@ -79,6 +90,9 @@ export default function NewSalePage() {
   };
 
   const totalSaleAmount = saleItems.reduce((sum, item) => sum + item.totalPrice, 0);
+  const totalSaleCost = saleItems.reduce((sum, item) => sum + item.totalCost, 0);
+  const totalSaleProfit = totalSaleAmount - totalSaleCost;
+
 
   const handlePaymentProofChange = (event: ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files[0]) {
@@ -101,24 +115,57 @@ export default function NewSalePage() {
         toast({ title: "Método de Pago", description: "Selecciona un método de pago.", variant: "destructive"});
         return;
     }
-    if (paymentMethod === 'transferencia' && !paymentProofFile) {
-        toast({ title: "Comprobante Requerido", description: "Sube el comprobante de pago para transferencia.", variant: "destructive"});
-        return;
-    }
+    // Comprobante is optional now as per user initial request.
+    // if (paymentMethod === 'transferencia' && !paymentProofFile) {
+    //     toast({ title: "Comprobante Requerido", description: "Sube el comprobante de pago para transferencia.", variant: "destructive"});
+    //     return;
+    // }
     
-    const saleData = {
+    const saleData: Sale = {
       id: `sale-${Date.now()}`,
       customerName,
       items: saleItems,
       totalAmount: totalSaleAmount,
+      totalCostAmount: totalSaleCost,
+      totalProfit: totalSaleProfit,
       date: new Date().toISOString(),
       paymentMethod: paymentMethod as PaymentMethod,
       paymentProofFileName: paymentMethod === 'transferencia' ? paymentProofFile?.name : undefined,
       generatedBy: mounted ? localStorage.getItem('userRole') || 'unknown' : 'unknown'
     };
 
+    // In a real app, update inventory here
+    // e.g., by calling an API that then updates mockSales and initialUniforms (or a database)
+    // For demo, we can try to update the `initialUniforms` stored in localStorage or a shared state.
+    // This is simplified for the mock.
+
     if (mounted) {
       localStorage.setItem('currentSaleForReceipt', JSON.stringify(saleData));
+       // Add to mockSales (for dashboard, etc.) - This would be a backend operation
+      const currentSales = JSON.parse(localStorage.getItem('mockSales') || '[]') as Sale[];
+      localStorage.setItem('mockSales', JSON.stringify([...currentSales, saleData]));
+
+      // Update stock in uniformsData (localStorage for persistence across sessions in demo)
+      let updatedUniforms = [...uniformsData];
+      saleData.items.forEach(soldItem => {
+        updatedUniforms = updatedUniforms.map(uni => {
+          if (uni.id === soldItem.uniformId) {
+            return {
+              ...uni,
+              sizes: uni.sizes.map(s => {
+                if (s.size === soldItem.size) {
+                  return {...s, stock: s.stock - soldItem.quantity};
+                }
+                return s;
+              })
+            };
+          }
+          return uni;
+        });
+      });
+      localStorage.setItem('updatedUniformsData', JSON.stringify(updatedUniforms));
+      setUniformsData(updatedUniforms); // Refresh local state if needed elsewhere on this page
+
     }
     router.push(`/sales/receipt/${saleData.id}`);
   };
@@ -189,7 +236,7 @@ export default function NewSalePage() {
               </div>
             </CardContent>
             <CardFooter>
-                <Button onClick={handleAddItemToSale} type="button" className="shadow hover:shadow-md" disabled={!selectedUniformForForm || !currentSize || !currentQuantity}>
+                <Button onClick={handleAddItemToSale} type="button" className="shadow hover:shadow-md" disabled={!selectedUniformForForm || !currentSize || !currentQuantity || Number(currentQuantity) <= 0}>
                     <PlusCircle className="mr-2 h-4 w-4" /> Agregar a la Venta
                 </Button>
             </CardFooter>
@@ -269,7 +316,7 @@ export default function NewSalePage() {
           </div>
         </CardContent>
         <CardFooter className="flex justify-end">
-          <Button onClick={handleGenerateReceipt} size="lg" className="shadow-lg hover:shadow-xl" disabled={saleItems.length === 0 || !customerName.trim() || !paymentMethod || (paymentMethod === 'transferencia' && !paymentProofFile)}>
+          <Button onClick={handleGenerateReceipt} size="lg" className="shadow-lg hover:shadow-xl" disabled={saleItems.length === 0 || !customerName.trim() || !paymentMethod /* || (paymentMethod === 'transferencia' && !paymentProofFile) - Comprobante es opcional */}>
             <FileSignature className="mr-2 h-5 w-5" />
             Generar Recibo
           </Button>
@@ -278,3 +325,4 @@ export default function NewSalePage() {
     </div>
   );
 }
+

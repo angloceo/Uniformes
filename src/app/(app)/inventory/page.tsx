@@ -1,45 +1,69 @@
+
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { PackagePlus, Search, Filter } from "lucide-react";
-import { initialUniforms, type Uniform } from '@/lib/mock-data';
+import { PackagePlus, Search, Shirt, Zap, Layers, Wind, GripVertical } from "lucide-react";
+import { initialUniforms, type Uniform, type UniformSize } from '@/lib/mock-data';
 import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import type { LucideIcon } from "lucide-react";
+
+const garmentIcons: Record<Uniform['category'], LucideIcon> = {
+  'Camiseta Polo': Shirt,
+  'Camiseta Deporte': Zap,
+  'Sudadera': Shirt, // Using Shirt as placeholder, consider custom SVG or different icon if available
+  'Falda': Layers,
+  'Chaqueta': Wind,
+};
+
+const getGarmentIcon = (category: Uniform['category']): React.ReactElement => {
+  const IconComponent = garmentIcons[category] || GripVertical; // Fallback icon
+  return <IconComponent className="h-6 w-6 text-primary" />;
+};
+
 
 export default function InventoryPage() {
-  const [uniforms, setUniforms] = useState<Uniform[]>([]);
+  const [uniforms, setUniforms] = useState<Uniform[]>(initialUniforms); // Use initialUniforms directly
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setUniforms(initialUniforms);
+    // Data is now directly from initialUniforms, so no async loading needed for it
     setLoading(false);
   }, []);
 
+  const availableCategories = useMemo(() => {
+    const categories = new Set(uniforms.map(u => u.category));
+    return Array.from(categories);
+  }, [uniforms]);
+
+
   const getStockStatus = (stock: number, lowStockThreshold: number): { label: string; variant: "default" | "secondary" | "destructive" | "outline" } => {
     if (stock === 0) return { label: "Agotado", variant: "destructive" };
-    if (stock <= lowStockThreshold) return { label: "Bajo Stock", variant: "destructive" };
+    if (stock <= lowStockThreshold) return { label: "Bajo Stock", variant: "destructive" }; // Kept destructive for low stock
     if (stock <= lowStockThreshold * 2) return { label: "Medio", variant: "outline" }; 
     return { label: "Suficiente", variant: "default" }; 
   };
 
   const filteredUniforms = uniforms.flatMap(uniform =>
     uniform.sizes.map(size => ({
-      ...uniform,
-      ...size,
+      ...uniform, // Spread uniform properties (id, name, category, imageUrl)
+      ...size,    // Spread size properties (size, price, cost, stock, lowStockThreshold)
       uniformName: uniform.name, 
       sizeSpecificId: `${uniform.id}-${size.size}`
     }))
-  ).filter(item =>
-    item.uniformName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    item.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    item.size.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  ).filter(item => {
+    const searchTermMatch = item.uniformName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                            item.size.toLowerCase().includes(searchTerm.toLowerCase());
+    const categoryMatch = selectedCategory ? item.category === selectedCategory : true;
+    return searchTermMatch && categoryMatch;
+  });
 
   if (loading) {
     return (
@@ -78,26 +102,34 @@ export default function InventoryPage() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 type="search"
-                placeholder="Buscar por nombre, categoría, talla..."
+                placeholder="Buscar por nombre, talla..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10 w-full"
               />
             </div>
-            <Button variant="outline" className="shadow hover:shadow-md">
-              <Filter className="mr-2 h-4 w-4" /> Filtros
-            </Button>
+            <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+              <SelectTrigger className="w-full sm:w-[200px] shadow hover:shadow-md">
+                <SelectValue placeholder="Filtrar por categoría" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">Todas las categorías</SelectItem>
+                {availableCategories.map(category => (
+                  <SelectItem key={category} value={category}>{category}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="overflow-x-auto rounded-md border">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-[80px] hidden sm:table-cell">Imagen</TableHead>
+                  <TableHead className="w-[60px] text-center hidden sm:table-cell">Ícono</TableHead>
                   <TableHead>Prenda</TableHead>
                   <TableHead>Categoría</TableHead>
                   <TableHead>Talla</TableHead>
-                  <TableHead className="text-right">Precio</TableHead>
+                  <TableHead className="text-right">Precio Venta</TableHead>
                   <TableHead className="text-right">Stock</TableHead>
                   <TableHead className="text-center">Estado</TableHead>
                 </TableRow>
@@ -108,17 +140,8 @@ export default function InventoryPage() {
                     const status = getStockStatus(item.stock, item.lowStockThreshold);
                     return (
                       <TableRow key={item.sizeSpecificId} className="hover:bg-muted/50">
-                        <TableCell className="hidden sm:table-cell">
-                          {item.imageUrl && (
-                            <Image
-                              src={item.imageUrl}
-                              alt={item.uniformName}
-                              width={50}
-                              height={50}
-                              className="rounded-md object-cover aspect-square"
-                              data-ai-hint="school uniform"
-                            />
-                          )}
+                        <TableCell className="hidden sm:table-cell text-center">
+                          {getGarmentIcon(item.category)}
                         </TableCell>
                         <TableCell className="font-medium">{item.uniformName}</TableCell>
                         <TableCell className="text-muted-foreground">{item.category}</TableCell>

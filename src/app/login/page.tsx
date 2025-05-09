@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useRouter } from 'next/navigation';
@@ -7,6 +8,7 @@ import { AppLogo } from '@/components/AppLogo';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useState, useEffect } from 'react';
+import { siteConfig } from '@/config/site'; // Import siteConfig
 
 export default function LoginPage() {
   const router = useRouter();
@@ -40,7 +42,7 @@ export default function LoginPage() {
             <AppLogo showColegioLogo={true} />
           </div>
           <CardTitle className="text-2xl">Iniciar Sesión</CardTitle>
-          <CardDescription>Accede al panel de UniformTrack.</CardDescription>
+          <CardDescription>Accede al panel de {siteConfig.name}.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="space-y-2">
@@ -63,7 +65,7 @@ export default function LoginPage() {
         </CardContent>
       </Card>
       <footer className="mt-8 text-center text-sm text-muted-foreground">
-        <p>&copy; {new Date().getFullYear()} Colegio Anglo Español. Todos los derechos reservados.</p>
+        <p>&copy; {new Date().getFullYear()} {siteConfig.name} - Colegio Anglo Español. Todos los derechos reservados.</p>
       </footer>
     </div>
   );
