@@ -13,28 +13,66 @@ import { initialUniforms, type Uniform, type UniformSize } from '@/lib/mock-data
 import { DollarSign, TrendingUp, Save, AlertCircle, Info, Filter } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
-
-// Make initialUniforms mutable for this page (in a real app, this would be API calls)
-let mutableUniforms: Uniform[] = JSON.parse(JSON.stringify(initialUniforms));
+import { Skeleton } from '@/components/ui/skeleton';
 
 const ALL_CATEGORIES_VALUE = "--all--";
 
 export default function ProfitManagementPage() {
   const { toast } = useToast();
-  const [uniforms, setUniforms] = useState<Uniform[]>(mutableUniforms);
-  const [originalUniforms, setOriginalUniforms] = useState<Uniform[]>(JSON.parse(JSON.stringify(initialUniforms)));
+  const [uniforms, setUniforms] = useState<Uniform[]>([]);
+  const [originalUniforms, setOriginalUniforms] = useState<Uniform[]>([]);
   const [hasChanges, setHasChanges] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>(ALL_CATEGORIES_VALUE);
+  const [loading, setLoading] = useState(true);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (mounted) {
+      let liveUniformsData: Uniform[];
+      const storedUniformsRaw = localStorage.getItem('updatedUniformsData');
+      if (storedUniformsRaw) {
+        try {
+          const parsedData = JSON.parse(storedUniformsRaw);
+          if (Array.isArray(parsedData)) {
+            liveUniformsData = parsedData;
+          } else {
+            console.warn("Stored 'updatedUniformsData' is not an array, falling back to initialUniforms.");
+            liveUniformsData = initialUniforms;
+            localStorage.setItem('updatedUniformsData', JSON.stringify(initialUniforms)); // Correct localStorage
+          }
+        } catch (error) {
+          console.error("Error parsing 'updatedUniformsData' from localStorage:", error);
+          liveUniformsData = initialUniforms;
+          localStorage.setItem('updatedUniformsData', JSON.stringify(initialUniforms)); // Correct localStorage
+        }
+      } else {
+        liveUniformsData = initialUniforms;
+        localStorage.setItem('updatedUniformsData', JSON.stringify(initialUniforms)); // Initialize localStorage
+      }
+      
+      const deepCopiedData = JSON.parse(JSON.stringify(liveUniformsData));
+      setUniforms(deepCopiedData);
+      setOriginalUniforms(JSON.parse(JSON.stringify(deepCopiedData)));
+      setLoading(false);
+    }
+  }, [mounted]);
 
   const availableCategories = useMemo(() => {
-    const categories = new Set(initialUniforms.map(u => u.category));
+    if (loading) return [];
+    const categories = new Set(uniforms.map(u => u.category));
     return Array.from(categories);
-  }, []);
+  }, [uniforms, loading]);
 
 
   const handleInputChange = (uniformId: string, sizeValue: string, field: 'price' | 'cost', value: string) => {
     const numericValue = parseFloat(value);
-    if (isNaN(numericValue) && value !== '') return; 
+     // Allow empty string to clear, otherwise must be non-negative number
+    if (value !== '' && (isNaN(numericValue) || numericValue < 0)) return;
+
 
     setUniforms(currentUniforms =>
       currentUniforms.map(uni => {
@@ -59,7 +97,10 @@ export default function ProfitManagementPage() {
     let isValid = true;
     uniforms.forEach(uni => {
       uni.sizes.forEach(s => {
-        if (s.cost > s.price) {
+        // Ensure price and cost are numbers, default to 0 if undefined/null
+        const price = Number(s.price) || 0;
+        const cost = Number(s.cost) || 0;
+        if (cost > price) {
           toast({
             title: "Error de Validación",
             description: `El costo de ${uni.name} (Talla: ${s.size}) no puede ser mayor que el precio.`,
@@ -72,13 +113,12 @@ export default function ProfitManagementPage() {
 
     if (!isValid) return;
 
-    mutableUniforms = JSON.parse(JSON.stringify(uniforms));
-    // Update localStorage so other pages see the changes
+    const updatedUniformsData = JSON.parse(JSON.stringify(uniforms));
     if (typeof window !== 'undefined') {
-        localStorage.setItem('updatedUniformsData', JSON.stringify(mutableUniforms));
+        localStorage.setItem('updatedUniformsData', JSON.stringify(updatedUniformsData));
     }
-    setOriginalUniforms(JSON.parse(JSON.stringify(mutableUniforms))); // Update original state after save
-    console.log("Datos guardados y localStorage actualizado:", mutableUniforms);
+    setOriginalUniforms(JSON.parse(JSON.stringify(updatedUniformsData))); 
+    
     toast({
       title: "Cambios Guardados",
       description: "Los costos y precios han sido actualizados.",
@@ -87,13 +127,15 @@ export default function ProfitManagementPage() {
   };
   
   const filteredUniformsForDisplay = useMemo(() => {
+    if (loading) return [];
     if (selectedCategory === ALL_CATEGORIES_VALUE) {
       return uniforms;
     }
     return uniforms.filter(uni => uni.category === selectedCategory);
-  }, [uniforms, selectedCategory]);
+  }, [uniforms, selectedCategory, loading]);
 
   const overallPotentialProfitData = useMemo(() => {
+    if (loading) return { totalPotentialProfit: 0, totalStockValueAtCost: 0, totalStockValueAtSale: 0 };
     let totalPotentialProfit = 0;
     let totalStockValueAtCost = 0;
     let totalStockValueAtSale = 0;
@@ -101,18 +143,20 @@ export default function ProfitManagementPage() {
     uniforms.forEach(uni => { 
       uni.sizes.forEach(s => {
         if (s.stock > 0) {
-          const profitPerUnit = s.price - s.cost;
+          const price = Number(s.price) || 0;
+          const cost = Number(s.cost) || 0;
+          const profitPerUnit = price - cost;
           totalPotentialProfit += profitPerUnit * s.stock;
-          totalStockValueAtCost += s.cost * s.stock;
-          totalStockValueAtSale += s.price * s.stock;
+          totalStockValueAtCost += cost * s.stock;
+          totalStockValueAtSale += price * s.stock;
         }
       });
     });
     return { totalPotentialProfit, totalStockValueAtCost, totalStockValueAtSale };
-  }, [uniforms]);
+  }, [uniforms, loading]);
 
   const categorySpecificPotentialProfitData = useMemo(() => {
-    if (selectedCategory === ALL_CATEGORIES_VALUE) {
+    if (loading || selectedCategory === ALL_CATEGORIES_VALUE) {
       return { totalPotentialProfit: 0, totalStockValueAtCost: 0, totalStockValueAtSale: 0, category: null };
     }
     let totalPotentialProfit = 0;
@@ -122,16 +166,60 @@ export default function ProfitManagementPage() {
     filteredUniformsForDisplay.forEach(uni => {
       uni.sizes.forEach(s => {
         if (s.stock > 0) {
-          const profitPerUnit = s.price - s.cost;
+          const price = Number(s.price) || 0;
+          const cost = Number(s.cost) || 0;
+          const profitPerUnit = price - cost;
           totalPotentialProfit += profitPerUnit * s.stock;
-          totalStockValueAtCost += s.cost * s.stock;
-          totalStockValueAtSale += s.price * s.stock;
+          totalStockValueAtCost += cost * s.stock;
+          totalStockValueAtSale += price * s.stock;
         }
       });
     });
     return { totalPotentialProfit, totalStockValueAtCost, totalStockValueAtSale, category: selectedCategory };
-  }, [filteredUniformsForDisplay, selectedCategory]);
+  }, [filteredUniformsForDisplay, selectedCategory, loading]);
 
+  if (!mounted || loading) {
+    return (
+      <div className="space-y-8 animate-pulse">
+        <CardHeader className="px-0">
+          <Skeleton className="h-10 w-3/4" />
+          <Skeleton className="h-5 w-1/2 mt-2" />
+        </CardHeader>
+        <Card className="border-primary bg-primary/10">
+          <CardContent className="pt-6">
+             <Skeleton className="h-5 w-full" />
+          </CardContent>
+        </Card>
+        <Card className="shadow-lg">
+          <CardHeader>
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div className="w-full sm:w-1/2 space-y-2">
+                    <Skeleton className="h-6 w-3/4" />
+                    <Skeleton className="h-4 w-full" />
+                </div>
+                <Skeleton className="h-10 w-full sm:w-[200px]" />
+            </div>
+          </CardHeader>
+          <CardContent>
+            <Skeleton className="h-[500px] w-full" />
+          </CardContent>
+          <CardFooter className="flex justify-end">
+            <Skeleton className="h-10 w-36" />
+          </CardFooter>
+        </Card>
+         <Card className="shadow-lg">
+          <CardHeader>
+            <Skeleton className="h-6 w-1/2" />
+            <Skeleton className="h-4 w-3/4 mt-1" />
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <Skeleton className="h-20 w-full" />
+            <Skeleton className="h-20 w-full" />
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
@@ -200,39 +288,46 @@ export default function ProfitManagementPage() {
               <TableBody>
                 {filteredUniformsForDisplay.length > 0 ? (
                   filteredUniformsForDisplay.map(uni =>
-                    uni.sizes.map(s => (
-                      <TableRow key={`${uni.id}-${s.size}`}>
-                        <TableCell className="font-medium">{uni.name}</TableCell>
-                        <TableCell>{s.size}</TableCell>
-                        <TableCell className="text-right text-muted-foreground">
-                          {originalUniforms.find(ou => ou.id === uni.id)?.sizes.find(os => os.size === s.size)?.price.toLocaleString('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }) || 'N/A'}
-                        </TableCell>
-                         <TableCell className="text-right">
-                          <Input
-                            type="number"
-                            value={s.price}
-                            onChange={(e) => handleInputChange(uni.id, s.size, 'price', e.target.value)}
-                            className="w-32 text-right tabular-nums"
-                            placeholder="Precio"
-                            min="0"
-                          />
-                        </TableCell>
-                         <TableCell className="text-right text-muted-foreground">
-                          {originalUniforms.find(ou => ou.id === uni.id)?.sizes.find(os => os.size === s.size)?.cost.toLocaleString('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }) || 'N/A'}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Input
-                            type="number"
-                            value={s.cost}
-                            onChange={(e) => handleInputChange(uni.id, s.size, 'cost', e.target.value)}
-                            className="w-32 text-right tabular-nums"
-                            placeholder="Costo"
-                            min="0"
-                          />
-                        </TableCell>
-                        <TableCell className="text-right">{s.stock}</TableCell>
-                      </TableRow>
-                    ))
+                    uni.sizes.map(s => {
+                      const originalUniData = originalUniforms.find(ou => ou.id === uni.id);
+                      const originalSizeData = originalUniData?.sizes.find(os => os.size === s.size);
+                      const currentPrice = Number(s.price) || 0;
+                      const currentCost = Number(s.cost) || 0;
+
+                      return (
+                        <TableRow key={`${uni.id}-${s.size}`}>
+                          <TableCell className="font-medium">{uni.name}</TableCell>
+                          <TableCell>{s.size}</TableCell>
+                          <TableCell className="text-right text-muted-foreground">
+                            {originalSizeData?.price != null ? originalSizeData.price.toLocaleString('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }) : 'N/A'}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Input
+                              type="number"
+                              value={currentPrice}
+                              onChange={(e) => handleInputChange(uni.id, s.size, 'price', e.target.value)}
+                              className="w-32 text-right tabular-nums"
+                              placeholder="Precio"
+                              min="0"
+                            />
+                          </TableCell>
+                          <TableCell className="text-right text-muted-foreground">
+                             {originalSizeData?.cost != null ? originalSizeData.cost.toLocaleString('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }) : 'N/A'}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Input
+                              type="number"
+                              value={currentCost}
+                              onChange={(e) => handleInputChange(uni.id, s.size, 'cost', e.target.value)}
+                              className="w-32 text-right tabular-nums"
+                              placeholder="Costo"
+                              min="0"
+                            />
+                          </TableCell>
+                          <TableCell className="text-right">{s.stock}</TableCell>
+                        </TableRow>
+                      );
+                    })
                   )
                 ) : (
                     <TableRow>
