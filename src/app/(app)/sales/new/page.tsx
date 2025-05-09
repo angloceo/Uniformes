@@ -1,0 +1,238 @@
+"use client";
+
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import Image from 'next/image';
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { useToast } from "@/hooks/use-toast";
+import { initialUniforms, type Uniform, type UniformSize, type SaleItem } from '@/lib/mock-data';
+import { ShoppingCart, PlusCircle, Trash2, ArrowLeft, FileSignature } from 'lucide-react';
+
+export default function NewSalePage() {
+  const router = useRouter();
+  const { toast } = useToast();
+
+  const [uniformsData, setUniformsData] = useState<Uniform[]>([]);
+  const [customerName, setCustomerName] = useState('');
+  const [saleItems, setSaleItems] = useState<SaleItem[]>([]);
+  
+  // Form state for adding an item
+  const [currentUniformId, setCurrentUniformId] = useState<string>('');
+  const [currentSize, setCurrentSize] = useState<string>('');
+  const [currentQuantity, setCurrentQuantity] = useState<number | string>(1);
+  
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    setUniformsData(initialUniforms);
+  }, []);
+
+  const selectedUniformForForm = uniformsData.find(u => u.id === currentUniformId);
+  const selectedUniformSizeForForm = selectedUniformForForm?.sizes.find(s => s.size === currentSize);
+
+  const handleAddItemToSale = () => {
+    if (!selectedUniformForForm || !selectedUniformSizeForForm || !currentQuantity || Number(currentQuantity) <= 0) {
+      toast({ title: "Error", description: "Selecciona prenda, talla y cantidad válida.", variant: "destructive" });
+      return;
+    }
+
+    // Check stock (conceptual, real check would be against live data)
+    if (Number(currentQuantity) > selectedUniformSizeForForm.stock) {
+        toast({ title: "Stock Insuficiente", description: `Solo hay ${selectedUniformSizeForForm.stock} unidades de ${selectedUniformForForm.name} (Talla: ${currentSize}).`, variant: "destructive"});
+        return;
+    }
+
+    const newItem: SaleItem = {
+      uniformId: selectedUniformForForm.id,
+      uniformName: selectedUniformForForm.name,
+      size: currentSize,
+      quantity: Number(currentQuantity),
+      unitPrice: selectedUniformSizeForForm.price,
+      totalPrice: selectedUniformSizeForForm.price * Number(currentQuantity),
+    };
+
+    setSaleItems(prevItems => {
+      const existingItemIndex = prevItems.findIndex(item => item.uniformId === newItem.uniformId && item.size === newItem.size);
+      if (existingItemIndex > -1) {
+        const updatedItems = [...prevItems];
+        updatedItems[existingItemIndex].quantity += newItem.quantity;
+        updatedItems[existingItemIndex].totalPrice += newItem.totalPrice;
+        return updatedItems;
+      }
+      return [...prevItems, newItem];
+    });
+
+    // Reset form fields
+    setCurrentUniformId('');
+    setCurrentSize('');
+    setCurrentQuantity(1);
+  };
+
+  const handleRemoveItem = (uniformId: string, size: string) => {
+    setSaleItems(prevItems => prevItems.filter(item => !(item.uniformId === uniformId && item.size === size)));
+  };
+
+  const totalSaleAmount = saleItems.reduce((sum, item) => sum + item.totalPrice, 0);
+
+  const handleGenerateReceipt = () => {
+    if (saleItems.length === 0) {
+      toast({ title: "Venta Vacía", description: "Agrega al menos un artículo para generar un recibo.", variant: "destructive" });
+      return;
+    }
+    if (!customerName.trim()) {
+        toast({ title: "Nombre del Comprador", description: "Por favor, ingresa el nombre del comprador.", variant: "destructive"});
+        return;
+    }
+    
+    const saleData = {
+      id: `sale-${Date.now()}`, // Temporary ID
+      customerName,
+      items: saleItems,
+      totalAmount: totalSaleAmount,
+      date: new Date().toISOString(),
+      generatedBy: mounted ? localStorage.getItem('userRole') || 'unknown' : 'unknown'
+    };
+
+    // In a real app, save saleData to backend, then navigate
+    // For now, pass data via router query (limited size) or state management solution
+    // Storing in localStorage for simplicity to pass to receipt page.
+    if (mounted) {
+      localStorage.setItem('currentSaleForReceipt', JSON.stringify(saleData));
+    }
+    router.push(`/sales/receipt/${saleData.id}`);
+  };
+  
+  if (!mounted) {
+    return <div className="flex items-center justify-center min-h-screen">Cargando...</div>;
+  }
+
+  return (
+    <div className="space-y-6">
+      <Button variant="outline" onClick={() => router.back()} className="mb-4 shadow hover:shadow-md">
+        <ArrowLeft className="mr-2 h-4 w-4" />
+        Volver
+      </Button>
+
+      <Card className="shadow-xl">
+        <CardHeader>
+          <CardTitle className="text-2xl font-semibold flex items-center">
+            <ShoppingCart className="mr-3 h-6 w-6 text-primary" />
+            Registrar Nueva Venta
+          </CardTitle>
+          <CardDescription>Completa los detalles para registrar una nueva venta de uniformes.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-8">
+          {/* Customer Info */}
+          <div>
+            <Label htmlFor="customerName" className="text-base font-medium">Nombre del Comprador</Label>
+            <Input 
+              id="customerName" 
+              placeholder="Ej: Juan Pérez" 
+              value={customerName}
+              onChange={(e) => setCustomerName(e.target.value)}
+              className="mt-1"
+            />
+          </div>
+
+          {/* Add Item Form */}
+          <Card className="border-dashed border-2 border-primary/50 shadow-inner">
+            <CardHeader>
+              <CardTitle className="text-lg">Agregar Prenda a la Venta</CardTitle>
+            </CardHeader>
+            <CardContent className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+              <div className="md:col-span-2">
+                <Label htmlFor="uniformType">Tipo de Prenda</Label>
+                <Select value={currentUniformId} onValueChange={(value) => { setCurrentUniformId(value); setCurrentSize(''); }}>
+                  <SelectTrigger id="uniformType"><SelectValue placeholder="Seleccionar prenda..." /></SelectTrigger>
+                  <SelectContent>
+                    {uniformsData.map(uni => (
+                      <SelectItem key={uni.id} value={uni.id}>{uni.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="uniformSize">Talla</Label>
+                <Select value={currentSize} onValueChange={setCurrentSize} disabled={!selectedUniformForForm}>
+                  <SelectTrigger id="uniformSize"><SelectValue placeholder="Talla..." /></SelectTrigger>
+                  <SelectContent>
+                    {selectedUniformForForm?.sizes.map(s => (
+                      <SelectItem key={s.size} value={s.size} disabled={s.stock === 0}>
+                        {s.size} {s.stock === 0 ? '(Agotado)' : `(Stock: ${s.stock})`}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="quantity">Cantidad</Label>
+                <Input id="quantity" type="number" placeholder="1" value={currentQuantity} onChange={(e) => setCurrentQuantity(e.target.value ? Number(e.target.value) : '')} min="1" />
+              </div>
+            </CardContent>
+            <CardFooter>
+                <Button onClick={handleAddItemToSale} type="button" className="shadow hover:shadow-md" disabled={!selectedUniformForForm || !currentSize || !currentQuantity}>
+                    <PlusCircle className="mr-2 h-4 w-4" /> Agregar a la Venta
+                </Button>
+            </CardFooter>
+          </Card>
+
+          {/* Sale Items Table */}
+          {saleItems.length > 0 && (
+            <div>
+              <h3 className="text-xl font-semibold mb-3">Artículos en esta Venta</h3>
+              <div className="overflow-x-auto rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Prenda</TableHead>
+                    <TableHead>Talla</TableHead>
+                    <TableHead className="text-right">Precio Unit.</TableHead>
+                    <TableHead className="text-right">Cantidad</TableHead>
+                    <TableHead className="text-right">Subtotal</TableHead>
+                    <TableHead className="text-center">Acción</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {saleItems.map((item, index) => (
+                    <TableRow key={`${item.uniformId}-${item.size}-${index}`}>
+                      <TableCell className="font-medium">{item.uniformName}</TableCell>
+                      <TableCell>{item.size}</TableCell>
+                      <TableCell className="text-right">${item.unitPrice.toFixed(2)}</TableCell>
+                      <TableCell className="text-right">{item.quantity}</TableCell>
+                      <TableCell className="text-right font-semibold">${item.totalPrice.toFixed(2)}</TableCell>
+                      <TableCell className="text-center">
+                        <Button variant="ghost" size="icon" onClick={() => handleRemoveItem(item.uniformId, item.size)} className="text-destructive hover:text-destructive/80">
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+              </div>
+            </div>
+          )}
+
+          {/* Total Amount */}
+          <div className="text-right mt-6">
+            <p className="text-2xl font-bold text-foreground">
+              Total: <span className="text-primary">${totalSaleAmount.toFixed(2)}</span>
+            </p>
+          </div>
+        </CardContent>
+        <CardFooter className="flex justify-end">
+          <Button onClick={handleGenerateReceipt} size="lg" className="shadow-lg hover:shadow-xl" disabled={saleItems.length === 0 || !customerName.trim()}>
+            <FileSignature className="mr-2 h-5 w-5" />
+            Generar Recibo
+          </Button>
+        </CardFooter>
+      </Card>
+    </div>
+  );
+}
