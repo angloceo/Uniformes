@@ -33,7 +33,8 @@ export const initialUniforms: Uniform[] = [
       { size: 'M', price: 40000, cost: 26000, stock: 13, lowStockThreshold: 3 },
       { size: 'L', price: 40000, cost: 26000, stock: 9, lowStockThreshold: 3 },
       { size: 'XL', price: 40000, cost: 26000, stock: 9, lowStockThreshold: 3 },
-      { size: 'XXL', price: 40000, cost: 26000, stock: 9, lowStockThreshold: 2 },
+      { size: 'XXL', price: 42000, cost: 27000, stock: 7, lowStockThreshold: 2 },
+      { size: 'XXXL', price: 42000, cost: 27000, stock: 5, lowStockThreshold: 2 },
     ],
   },
   {
@@ -53,6 +54,8 @@ export const initialUniforms: Uniform[] = [
       { size: 'S', price: 40000, cost: 25500, stock: 7, lowStockThreshold: 2 },
       { size: 'M', price: 40000, cost: 25500, stock: 6, lowStockThreshold: 2 },
       { size: 'L', price: 40000, cost: 25500, stock: 6, lowStockThreshold: 2 },
+      { size: 'XL', price: 42000, cost: 26500, stock: 5, lowStockThreshold: 2 },
+      { size: 'XXL', price: 42000, cost: 26500, stock: 4, lowStockThreshold: 1 },
     ],
   },
   {
@@ -73,6 +76,8 @@ export const initialUniforms: Uniform[] = [
       { size: 'M', price: 36000, cost: 23500, stock: 22, lowStockThreshold: 5 },
       { size: 'L', price: 36000, cost: 23500, stock: 15, lowStockThreshold: 5 },
       { size: 'XL', price: 36000, cost: 23500, stock: 10, lowStockThreshold: 3 },
+      { size: 'XXL', price: 38000, cost: 24500, stock: 8, lowStockThreshold: 2 },
+      { size: 'XXXL', price: 38000, cost: 24500, stock: 6, lowStockThreshold: 2 },
     ],
   },
   {
@@ -93,6 +98,8 @@ export const initialUniforms: Uniform[] = [
       { size: 'M', price: 64000, cost: 43000, stock: 6, lowStockThreshold: 2 },
       { size: 'L', price: 64000, cost: 43000, stock: 4, lowStockThreshold: 2 },
       { size: 'XL', price: 64000, cost: 43000, stock: 4, lowStockThreshold: 2 },
+      { size: 'XXL', price: 66000, cost: 44000, stock: 3, lowStockThreshold: 1 },
+      { size: 'XXXL', price: 66000, cost: 44000, stock: 2, lowStockThreshold: 1 },
     ],
   },
   {
@@ -113,6 +120,8 @@ export const initialUniforms: Uniform[] = [
       { size: 'M', price: 80000, cost: 54000, stock: 5, lowStockThreshold: 2 },
       { size: 'L', price: 80000, cost: 54000, stock: 3, lowStockThreshold: 1 },
       { size: 'XL', price: 80000, cost: 54000, stock: 3, lowStockThreshold: 1 },
+      { size: 'XXL', price: 82000, cost: 55000, stock: 2, lowStockThreshold: 1 },
+      { size: 'XXXL', price: 82000, cost: 55000, stock: 2, lowStockThreshold: 1 },
     ],
   },
 ];
@@ -150,12 +159,12 @@ export let mockSales: Sale[] = [ // Changed to let for potential updates
     date: new Date(Date.now() - 86400000).toISOString(), // Yesterday
     customerName: 'Ana Pérez',
     items: [
-      { uniformId: 'polo-unisex', uniformName: 'Camiseta Polo', size: 'M', quantity: 1, unitPrice: 38000, unitCost: 26000, totalPrice: 38000, totalCost: 26000 }, // Old price used as sale was yesterday
-      { uniformId: 'falda', uniformName: 'Falda Escolar', size: 'S', quantity: 1, unitPrice: 38000, unitCost: 25500, totalPrice: 38000, totalCost: 25500 }, // Old price used
+      { uniformId: 'polo-unisex', uniformName: 'Camiseta Polo', size: 'M', quantity: 1, unitPrice: 40000, unitCost: 26000, totalPrice: 40000, totalCost: 26000 }, 
+      { uniformId: 'falda', uniformName: 'Falda Escolar', size: 'S', quantity: 1, unitPrice: 40000, unitCost: 25500, totalPrice: 40000, totalCost: 25500 }, 
     ],
-    totalAmount: 76000,
+    totalAmount: 80000,
     totalCostAmount: 51500,
-    totalProfit: 24500,
+    totalProfit: 28500,
     paymentMethod: 'efectivo',
     generatedBy: 'admin',
   },
@@ -164,11 +173,11 @@ export let mockSales: Sale[] = [ // Changed to let for potential updates
     date: new Date().toISOString(), // Today
     customerName: 'Carlos López',
     items: [
-      { uniformId: 'camiseta-deporte', uniformName: 'Camiseta Deporte', size: '10', quantity: 2, unitPrice: 32000, unitCost: 22000, totalPrice: 64000, totalCost: 44000 }, // Old price used as sale was 'today' before price update
+      { uniformId: 'camiseta-deporte', uniformName: 'Camiseta Deporte', size: '10', quantity: 2, unitPrice: 34000, unitCost: 22000, totalPrice: 68000, totalCost: 44000 }, 
     ],
-    totalAmount: 64000,
+    totalAmount: 68000,
     totalCostAmount: 44000,
-    totalProfit: 20000,
+    totalProfit: 24000,
     paymentMethod: 'transferencia',
     paymentProofFileName: 'comprobante_clopez.pdf',
     generatedBy: 'secretary',
