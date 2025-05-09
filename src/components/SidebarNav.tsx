@@ -81,7 +81,7 @@ const navItemsBase: NavItem[] = [
     adminOnly: true,
     submenu: [
         { title: "Configuraciones", href: "/admin/settings", icon: Settings2 },
-        { title: "Costos y Ganancias", href: "/admin/profit-management", icon: TrendingUp },
+        // { title: "Costos y Ganancias", href: "/admin/profit-management", icon: TrendingUp }, // Removed as per request
     ]
   },
 ];
@@ -112,7 +112,26 @@ export function SidebarNav() {
       return userRole === 'admin';
     }
     return true;
-  });
+  }).map(item => {
+    // Filter submenu items if the main item itself is not filtered out
+    if (item.submenu) {
+      const filteredSubmenu = item.submenu.filter(subItem => {
+        if (subItem.adminOnly) {
+          return userRole === 'admin';
+        }
+        return true;
+      });
+      // If all sub-items are filtered out and the main item was only a container for adminOnly subitems,
+      // consider removing the main item or disabling it.
+      // For now, we just return the item with potentially empty submenu.
+      // If an admin item has no subitems left, it might not make sense to show it.
+      if (item.adminOnly && filteredSubmenu.length === 0) {
+        return null; // or return { ...item, submenu: [], disabled: true };
+      }
+      return { ...item, submenu: filteredSubmenu };
+    }
+    return item;
+  }).filter(item => item !== null) as NavItem[]; // Type assertion after filtering nulls
 
   if (!mounted) {
      return null; 
@@ -130,12 +149,12 @@ export function SidebarNav() {
         <div className="flex-1 overflow-y-auto overflow-x-hidden p-2 space-y-1">
         <SidebarMenu>
           {filteredNavItems.map((item) =>
-            item.submenu ? (
+            item.submenu && item.submenu.length > 0 ? ( // Check if submenu has items
               <SidebarMenuItem key={item.title} className="relative">
                 <SidebarMenuButton
                   isActive={pathname.startsWith(item.href)}
                   tooltip={{children: item.title, side: 'right', align: 'center' }}
-                  className="justify-between" // Keep for potential arrow if Radix supports it natively
+                  className="justify-between" 
                   disabled={item.disabled}
                   aria-disabled={item.disabled}
                 >
@@ -161,7 +180,7 @@ export function SidebarNav() {
                   ))}
                 </SidebarMenuSub>
               </SidebarMenuItem>
-            ) : (
+            ) : !item.submenu ? ( // Render if not a submenu container or an empty one that should still show
               <SidebarMenuItem key={item.title}>
                 <Link href={item.href} passHref legacyBehavior>
                   <SidebarMenuButton
@@ -175,7 +194,7 @@ export function SidebarNav() {
                   </SidebarMenuButton>
                 </Link>
               </SidebarMenuItem>
-            )
+            ) : null // Don't render admin menu if it has no sub-items left
           )}
         </SidebarMenu>
         </div>
