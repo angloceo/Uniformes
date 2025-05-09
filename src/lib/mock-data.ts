@@ -16,44 +16,43 @@ export interface Uniform {
 
 export const initialUniforms: Uniform[] = [
   {
-    id: 'polo-unisex', // Changed ID
-    name: 'Camiseta Polo', // Changed name
+    id: 'polo-unisex',
+    name: 'Camiseta Polo', 
     category: 'Camiseta Polo',
-    imageUrl: 'https://picsum.photos/seed/polounisex/200/200', // Changed image seed
-    sizes: [ // Merged sizes from (Hombre) and (Mujer), taking higher stock for overlaps
-      { size: '2', price: 36000, cost: 25000, stock: 20, lowStockThreshold: 5 }, // Max stock was 20
-      { size: '4', price: 36000, cost: 25000, stock: 25, lowStockThreshold: 5 }, // Max stock was 25
-      { size: '6', price: 36000, cost: 25000, stock: 20, lowStockThreshold: 5 }, // Max stock was 20
-      { size: '8', price: 36000, cost: 25000, stock: 20, lowStockThreshold: 5 }, // Max stock was 20
-      { size: '10', price: 36000, cost: 25000, stock: 20, lowStockThreshold: 5 }, // Max stock was 20
-      { size: '12', price: 36000, cost: 25000, stock: 20, lowStockThreshold: 5 }, // Max stock was 20
-      { size: '14', price: 36000, cost: 25000, stock: 20, lowStockThreshold: 5 }, // Max stock was 20
-      { size: '16', price: 36000, cost: 25000, stock: 20, lowStockThreshold: 5 }, // Max stock was 20
-      { size: 'S', price: 38000, cost: 26000, stock: 18, lowStockThreshold: 3 }, // Max stock was 18
-      { size: 'M', price: 38000, cost: 26000, stock: 13, lowStockThreshold: 3 }, // Max stock was 13
-      { size: 'L', price: 38000, cost: 26000, stock: 9, lowStockThreshold: 3 },  // Max stock was 9
-      { size: 'XL', price: 38000, cost: 26000, stock: 9, lowStockThreshold: 3 }, // Max stock was 9
-      { size: 'XXL', price: 38000, cost: 26000, stock: 9, lowStockThreshold: 2 },// Max stock was 9 (from Mujer)
+    imageUrl: 'https://picsum.photos/seed/polounisex/200/200', 
+    sizes: [ 
+      { size: '2', price: 38000, cost: 25000, stock: 20, lowStockThreshold: 5 },
+      { size: '4', price: 38000, cost: 25000, stock: 25, lowStockThreshold: 5 },
+      { size: '6', price: 38000, cost: 25000, stock: 20, lowStockThreshold: 5 },
+      { size: '8', price: 38000, cost: 25000, stock: 20, lowStockThreshold: 5 },
+      { size: '10', price: 38000, cost: 25000, stock: 20, lowStockThreshold: 5 },
+      { size: '12', price: 38000, cost: 25000, stock: 20, lowStockThreshold: 5 },
+      { size: '14', price: 38000, cost: 25000, stock: 20, lowStockThreshold: 5 },
+      { size: '16', price: 38000, cost: 25000, stock: 20, lowStockThreshold: 5 },
+      { size: 'S', price: 40000, cost: 26000, stock: 18, lowStockThreshold: 3 },
+      { size: 'M', price: 40000, cost: 26000, stock: 13, lowStockThreshold: 3 },
+      { size: 'L', price: 40000, cost: 26000, stock: 9, lowStockThreshold: 3 },
+      { size: 'XL', price: 40000, cost: 26000, stock: 9, lowStockThreshold: 3 },
+      { size: 'XXL', price: 40000, cost: 26000, stock: 9, lowStockThreshold: 2 },
     ],
   },
-  // Camiseta Polo (Mujer) is removed as it's merged into Camiseta Polo (Unisex)
   {
     id: 'falda',
     name: 'Falda Escolar',
     category: 'Falda',
     imageUrl: 'https://picsum.photos/seed/faldaescolar/200/200',
     sizes: [
-      { size: '2', price: 36000, cost: 24000, stock: 15, lowStockThreshold: 4 },
-      { size: '4', price: 36000, cost: 24000, stock: 12, lowStockThreshold: 4 },
-      { size: '6', price: 36000, cost: 24000, stock: 10, lowStockThreshold: 3 },
-      { size: '8', price: 36000, cost: 24000, stock: 10, lowStockThreshold: 3 },
-      { size: '10', price: 36000, cost: 24000, stock: 10, lowStockThreshold: 3 },
-      { size: '12', price: 36000, cost: 24000, stock: 10, lowStockThreshold: 3 },
-      { size: '14', price: 36000, cost: 24000, stock: 10, lowStockThreshold: 3 },
-      { size: '16', price: 36000, cost: 24000, stock: 10, lowStockThreshold: 3 },
-      { size: 'S', price: 38000, cost: 25500, stock: 7, lowStockThreshold: 2 },
-      { size: 'M', price: 38000, cost: 25500, stock: 6, lowStockThreshold: 2 },
-      { size: 'L', price: 38000, cost: 25500, stock: 6, lowStockThreshold: 2 },
+      { size: '2', price: 38000, cost: 24000, stock: 15, lowStockThreshold: 4 },
+      { size: '4', price: 38000, cost: 24000, stock: 12, lowStockThreshold: 4 },
+      { size: '6', price: 38000, cost: 24000, stock: 10, lowStockThreshold: 3 },
+      { size: '8', price: 38000, cost: 24000, stock: 10, lowStockThreshold: 3 },
+      { size: '10', price: 38000, cost: 24000, stock: 10, lowStockThreshold: 3 },
+      { size: '12', price: 38000, cost: 24000, stock: 10, lowStockThreshold: 3 },
+      { size: '14', price: 38000, cost: 24000, stock: 10, lowStockThreshold: 3 },
+      { size: '16', price: 38000, cost: 24000, stock: 10, lowStockThreshold: 3 },
+      { size: 'S', price: 40000, cost: 25500, stock: 7, lowStockThreshold: 2 },
+      { size: 'M', price: 40000, cost: 25500, stock: 6, lowStockThreshold: 2 },
+      { size: 'L', price: 40000, cost: 25500, stock: 6, lowStockThreshold: 2 },
     ],
   },
   {
@@ -62,18 +61,18 @@ export const initialUniforms: Uniform[] = [
     category: 'Camiseta Deporte',
     imageUrl: 'https://picsum.photos/seed/camisetadeporte/200/200',
     sizes: [
-      { size: '2', price: 32000, cost: 22000, stock: 30, lowStockThreshold: 8 },
-      { size: '4', price: 32000, cost: 22000, stock: 28, lowStockThreshold: 8 },
-      { size: '6', price: 32000, cost: 22000, stock: 28, lowStockThreshold: 8 },
-      { size: '8', price: 32000, cost: 22000, stock: 28, lowStockThreshold: 8 },
-      { size: '10', price: 32000, cost: 22000, stock: 28, lowStockThreshold: 8 },
-      { size: '12', price: 32000, cost: 22000, stock: 28, lowStockThreshold: 8 },
-      { size: '14', price: 32000, cost: 22000, stock: 28, lowStockThreshold: 8 },
-      { size: '16', price: 32000, cost: 22000, stock: 28, lowStockThreshold: 8 },
-      { size: 'S', price: 34000, cost: 23500, stock: 20, lowStockThreshold: 5 },
-      { size: 'M', price: 34000, cost: 23500, stock: 22, lowStockThreshold: 5 },
-      { size: 'L', price: 34000, cost: 23500, stock: 15, lowStockThreshold: 5 },
-      { size: 'XL', price: 34000, cost: 23500, stock: 10, lowStockThreshold: 3 },
+      { size: '2', price: 34000, cost: 22000, stock: 30, lowStockThreshold: 8 },
+      { size: '4', price: 34000, cost: 22000, stock: 28, lowStockThreshold: 8 },
+      { size: '6', price: 34000, cost: 22000, stock: 28, lowStockThreshold: 8 },
+      { size: '8', price: 34000, cost: 22000, stock: 28, lowStockThreshold: 8 },
+      { size: '10', price: 34000, cost: 22000, stock: 28, lowStockThreshold: 8 },
+      { size: '12', price: 34000, cost: 22000, stock: 28, lowStockThreshold: 8 },
+      { size: '14', price: 34000, cost: 22000, stock: 28, lowStockThreshold: 8 },
+      { size: '16', price: 34000, cost: 22000, stock: 28, lowStockThreshold: 8 },
+      { size: 'S', price: 36000, cost: 23500, stock: 20, lowStockThreshold: 5 },
+      { size: 'M', price: 36000, cost: 23500, stock: 22, lowStockThreshold: 5 },
+      { size: 'L', price: 36000, cost: 23500, stock: 15, lowStockThreshold: 5 },
+      { size: 'XL', price: 36000, cost: 23500, stock: 10, lowStockThreshold: 3 },
     ],
   },
   {
@@ -82,18 +81,18 @@ export const initialUniforms: Uniform[] = [
     category: 'Sudadera',
     imageUrl: 'https://picsum.photos/seed/sudadera/200/200',
     sizes: [
-      { size: '2', price: 60000, cost: 42000, stock: 10, lowStockThreshold: 3 },
-      { size: '4', price: 60000, cost: 42000, stock: 10, lowStockThreshold: 3 },
-      { size: '6', price: 60000, cost: 42000, stock: 10, lowStockThreshold: 3 },
-      { size: '8', price: 60000, cost: 42000, stock: 10, lowStockThreshold: 3 },
-      { size: '10', price: 60000, cost: 42000, stock: 10, lowStockThreshold: 3 },
-      { size: '12', price: 60000, cost: 42000, stock: 10, lowStockThreshold: 3 },
-      { size: '14', price: 60000, cost: 42000, stock: 10, lowStockThreshold: 3 },
-      { size: '16', price: 60000, cost: 42000, stock: 10, lowStockThreshold: 3 },
-      { size: 'S', price: 62000, cost: 43000, stock: 8, lowStockThreshold: 3 },
-      { size: 'M', price: 62000, cost: 43000, stock: 6, lowStockThreshold: 2 },
-      { size: 'L', price: 62000, cost: 43000, stock: 4, lowStockThreshold: 2 },
-      { size: 'XL', price: 62000, cost: 43000, stock: 4, lowStockThreshold: 2 },
+      { size: '2', price: 62000, cost: 42000, stock: 10, lowStockThreshold: 3 },
+      { size: '4', price: 62000, cost: 42000, stock: 10, lowStockThreshold: 3 },
+      { size: '6', price: 62000, cost: 42000, stock: 10, lowStockThreshold: 3 },
+      { size: '8', price: 62000, cost: 42000, stock: 10, lowStockThreshold: 3 },
+      { size: '10', price: 62000, cost: 42000, stock: 10, lowStockThreshold: 3 },
+      { size: '12', price: 62000, cost: 42000, stock: 10, lowStockThreshold: 3 },
+      { size: '14', price: 62000, cost: 42000, stock: 10, lowStockThreshold: 3 },
+      { size: '16', price: 62000, cost: 42000, stock: 10, lowStockThreshold: 3 },
+      { size: 'S', price: 64000, cost: 43000, stock: 8, lowStockThreshold: 3 },
+      { size: 'M', price: 64000, cost: 43000, stock: 6, lowStockThreshold: 2 },
+      { size: 'L', price: 64000, cost: 43000, stock: 4, lowStockThreshold: 2 },
+      { size: 'XL', price: 64000, cost: 43000, stock: 4, lowStockThreshold: 2 },
     ],
   },
   {
@@ -102,18 +101,18 @@ export const initialUniforms: Uniform[] = [
     category: 'Chaqueta',
     imageUrl: 'https://picsum.photos/seed/chaquetauniforme/200/200',
     sizes: [
-      { size: '2', price: 75000, cost: 52000, stock: 7, lowStockThreshold: 2 },
-      { size: '4', price: 75000, cost: 52000, stock: 7, lowStockThreshold: 2 },
-      { size: '6', price: 75000, cost: 52000, stock: 7, lowStockThreshold: 2 },
-      { size: '8', price: 75000, cost: 52000, stock: 7, lowStockThreshold: 2 },
-      { size: '10', price: 75000, cost: 52000, stock: 7, lowStockThreshold: 2 },
-      { size: '12', price: 75000, cost: 52000, stock: 7, lowStockThreshold: 2 },
-      { size: '14', price: 75000, cost: 52000, stock: 7, lowStockThreshold: 2 },
-      { size: '16', price: 75000, cost: 52000, stock: 7, lowStockThreshold: 2 },
-      { size: 'S', price: 78000, cost: 54000, stock: 9, lowStockThreshold: 2 },
-      { size: 'M', price: 78000, cost: 54000, stock: 5, lowStockThreshold: 2 },
-      { size: 'L', price: 78000, cost: 54000, stock: 3, lowStockThreshold: 1 },
-      { size: 'XL', price: 78000, cost: 54000, stock: 3, lowStockThreshold: 1 },
+      { size: '2', price: 78000, cost: 52000, stock: 7, lowStockThreshold: 2 },
+      { size: '4', price: 78000, cost: 52000, stock: 7, lowStockThreshold: 2 },
+      { size: '6', price: 78000, cost: 52000, stock: 7, lowStockThreshold: 2 },
+      { size: '8', price: 78000, cost: 52000, stock: 7, lowStockThreshold: 2 },
+      { size: '10', price: 78000, cost: 52000, stock: 7, lowStockThreshold: 2 },
+      { size: '12', price: 78000, cost: 52000, stock: 7, lowStockThreshold: 2 },
+      { size: '14', price: 78000, cost: 52000, stock: 7, lowStockThreshold: 2 },
+      { size: '16', price: 78000, cost: 52000, stock: 7, lowStockThreshold: 2 },
+      { size: 'S', price: 80000, cost: 54000, stock: 9, lowStockThreshold: 2 },
+      { size: 'M', price: 80000, cost: 54000, stock: 5, lowStockThreshold: 2 },
+      { size: 'L', price: 80000, cost: 54000, stock: 3, lowStockThreshold: 1 },
+      { size: 'XL', price: 80000, cost: 54000, stock: 3, lowStockThreshold: 1 },
     ],
   },
 ];
@@ -151,8 +150,8 @@ export let mockSales: Sale[] = [ // Changed to let for potential updates
     date: new Date(Date.now() - 86400000).toISOString(), // Yesterday
     customerName: 'Ana Pérez',
     items: [
-      { uniformId: 'polo-unisex', uniformName: 'Camiseta Polo', size: 'M', quantity: 1, unitPrice: 38000, unitCost: 26000, totalPrice: 38000, totalCost: 26000 },
-      { uniformId: 'falda', uniformName: 'Falda Escolar', size: 'S', quantity: 1, unitPrice: 38000, unitCost: 25500, totalPrice: 38000, totalCost: 25500 },
+      { uniformId: 'polo-unisex', uniformName: 'Camiseta Polo', size: 'M', quantity: 1, unitPrice: 38000, unitCost: 26000, totalPrice: 38000, totalCost: 26000 }, // Old price used as sale was yesterday
+      { uniformId: 'falda', uniformName: 'Falda Escolar', size: 'S', quantity: 1, unitPrice: 38000, unitCost: 25500, totalPrice: 38000, totalCost: 25500 }, // Old price used
     ],
     totalAmount: 76000,
     totalCostAmount: 51500,
@@ -165,7 +164,7 @@ export let mockSales: Sale[] = [ // Changed to let for potential updates
     date: new Date().toISOString(), // Today
     customerName: 'Carlos López',
     items: [
-      { uniformId: 'camiseta-deporte', uniformName: 'Camiseta Deporte', size: '10', quantity: 2, unitPrice: 32000, unitCost: 22000, totalPrice: 64000, totalCost: 44000 },
+      { uniformId: 'camiseta-deporte', uniformName: 'Camiseta Deporte', size: '10', quantity: 2, unitPrice: 32000, unitCost: 22000, totalPrice: 64000, totalCost: 44000 }, // Old price used as sale was 'today' before price update
     ],
     totalAmount: 64000,
     totalCostAmount: 44000,
@@ -179,3 +178,4 @@ export let mockSales: Sale[] = [ // Changed to let for potential updates
 export const setMockSales = (newSales: Sale[]) => {
   mockSales = newSales;
 };
+
