@@ -123,7 +123,8 @@ export function SidebarNav() {
       <div className="flex h-full min-h-0 flex-col">
         <div className="flex h-16 items-center justify-start border-b border-sidebar-border px-4 shrink-0">
            <Link href="/dashboard" className="flex items-center gap-2">
-             <AppLogo showColegioLogo={true} iconClassName="h-7 w-7" textClassName="text-xl" />
+             {/* Use default AppLogo for application branding */}
+             <AppLogo iconClassName="h-7 w-7" textClassName="text-xl" />
            </Link>
         </div>
         <div className="flex-1 overflow-y-auto overflow-x-hidden p-2 space-y-1">

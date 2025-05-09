@@ -39,10 +39,15 @@ export default function LoginPage() {
       <Card className="w-full max-w-md shadow-xl">
         <CardHeader className="text-center">
           <div className="mx-auto mb-6 w-fit">
-            <AppLogo showColegioLogo={true} />
+            <AppLogo 
+              showColegioLogo={true} 
+              iconClassName="h-16 w-16" 
+              textClassName="text-2xl"
+              subTextClassName="text-sm"
+            />
           </div>
-          <CardTitle className="text-2xl">Iniciar Sesión</CardTitle>
-          <CardDescription>Accede al panel de {siteConfig.name}.</CardDescription>
+          <CardTitle className="text-2xl">Iniciar Sesión en {siteConfig.name}</CardTitle>
+          <CardDescription>Accede al panel de gestión de uniformes.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="space-y-2">
