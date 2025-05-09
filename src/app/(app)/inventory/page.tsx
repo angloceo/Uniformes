@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, type SVGProps } from 'react';
 import Link from 'next/link';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -13,10 +13,28 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { LucideIcon } from "lucide-react";
 
-const garmentIcons: Record<Uniform['category'], LucideIcon> = {
+// Custom SVG icon for Pants/Trousers
+const PantsIconSvg = (props: SVGProps<SVGSVGElement>) => (
+  <svg 
+    xmlns="http://www.w3.org/2000/svg" 
+    width="24" height="24" 
+    viewBox="0 0 24 24" 
+    fill="none" 
+    stroke="currentColor" 
+    strokeWidth="2" 
+    strokeLinecap="round" 
+    strokeLinejoin="round"
+    data-ai-hint="pants clothing"
+    {...props}
+  >
+    <path d="M9 2v10H6l-2 8h4l2-6h4l2 6h4l-2-8h-3V2Z"/>
+  </svg>
+);
+
+const garmentIcons: Record<Uniform['category'], React.ComponentType<React.SVGProps<SVGSVGElement>>> = {
   'Camiseta Polo': Shirt,
   'Camiseta Deporte': Zap,
-  'Sudadera': Shirt, 
+  'Sudadera': PantsIconSvg, // Changed to PantsIconSvg
   'Falda': Layers,
   'Chaqueta': Wind,
 };
