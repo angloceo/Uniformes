@@ -1,13 +1,14 @@
 "use client";
 import type { ReactNode } from 'react';
-import { SidebarProvider, Sidebar, SidebarInset, SidebarTrigger, SidebarHeader } from "@/components/ui/sidebar";
+import { SidebarProvider, Sidebar, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { SidebarNav } from "@/components/SidebarNav";
 import { AppLogo } from "@/components/AppLogo";
 import { Button } from "@/components/ui/button";
-import { LogOut, UserCircle } from "lucide-react";
+import { LogOut } from "lucide-react";
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { siteConfig } from '@/config/site';
+import { ThemeToggle } from '@/components/ThemeToggle';
 
 export default function AppLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
@@ -32,7 +33,6 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   };
 
   if (!mounted || !userRole) {
-    // You can show a loading spinner or a blank page while checking auth
     return <div className="flex items-center justify-center min-h-screen bg-background">Cargando...</div>;
   }
   
@@ -44,14 +44,17 @@ export default function AppLayout({ children }: { children: ReactNode }) {
       <SidebarInset className="flex flex-col min-h-screen">
         <header className="sticky top-0 z-40 flex h-16 items-center justify-between gap-4 border-b bg-background px-4 md:px-6 shadow-sm">
           <div className="flex items-center gap-4">
-            <SidebarTrigger className="md:hidden" /> {/* Only show trigger on mobile */}
-            <h1 className="text-lg font-semibold text-foreground hidden md:block">{siteConfig.name} Panel</h1>
+            <SidebarTrigger className="md:hidden h-8 w-8" /> {/* Only show trigger on mobile */}
+             <div className="hidden md:block">
+               <AppLogo iconClassName="h-7 w-7" textClassName="text-lg" />
+             </div>
           </div>
           <div className="flex items-center gap-3">
-            <span className="text-sm text-muted-foreground capitalize">
+            <ThemeToggle />
+            <span className="text-sm text-muted-foreground capitalize hidden sm:inline-block">
               {userRole || "Usuario"}
             </span>
-            <Button variant="ghost" size="icon" onClick={handleLogout} aria-label="Cerrar sesión">
+            <Button variant="ghost" size="icon" onClick={handleLogout} aria-label="Cerrar sesión" className="h-8 w-8">
               <LogOut className="h-5 w-5" />
             </Button>
           </div>

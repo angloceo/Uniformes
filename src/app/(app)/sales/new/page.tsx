@@ -1,17 +1,17 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, type ChangeEvent } from 'react';
 import { useRouter } from 'next/navigation';
-import Image from 'next/image';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import { initialUniforms, type Uniform, type UniformSize, type SaleItem } from '@/lib/mock-data';
-import { ShoppingCart, PlusCircle, Trash2, ArrowLeft, FileSignature } from 'lucide-react';
+import { initialUniforms, type Uniform, type SaleItem, type PaymentMethod } from '@/lib/mock-data';
+import { ShoppingCart, PlusCircle, Trash2, ArrowLeft, FileSignature, UploadCloud } from 'lucide-react';
 
 export default function NewSalePage() {
   const router = useRouter();
@@ -21,10 +21,12 @@ export default function NewSalePage() {
   const [customerName, setCustomerName] = useState('');
   const [saleItems, setSaleItems] = useState<SaleItem[]>([]);
   
-  // Form state for adding an item
   const [currentUniformId, setCurrentUniformId] = useState<string>('');
   const [currentSize, setCurrentSize] = useState<string>('');
   const [currentQuantity, setCurrentQuantity] = useState<number | string>(1);
+  
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | ''>('');
+  const [paymentProofFile, setPaymentProofFile] = useState<File | null>(null);
   
   const [mounted, setMounted] = useState(false);
 
@@ -42,7 +44,6 @@ export default function NewSalePage() {
       return;
     }
 
-    // Check stock (conceptual, real check would be against live data)
     if (Number(currentQuantity) > selectedUniformSizeForForm.stock) {
         toast({ title: "Stock Insuficiente", description: `Solo hay ${selectedUniformSizeForForm.stock} unidades de ${selectedUniformForForm.name} (Talla: ${currentSize}).`, variant: "destructive"});
         return;
@@ -68,7 +69,6 @@ export default function NewSalePage() {
       return [...prevItems, newItem];
     });
 
-    // Reset form fields
     setCurrentUniformId('');
     setCurrentSize('');
     setCurrentQuantity(1);
@@ -80,28 +80,43 @@ export default function NewSalePage() {
 
   const totalSaleAmount = saleItems.reduce((sum, item) => sum + item.totalPrice, 0);
 
+  const handlePaymentProofChange = (event: ChangeEvent<HTMLInputElement>) => {
+    if (event.target.files && event.target.files[0]) {
+      setPaymentProofFile(event.target.files[0]);
+    } else {
+      setPaymentProofFile(null);
+    }
+  };
+
   const handleGenerateReceipt = () => {
     if (saleItems.length === 0) {
-      toast({ title: "Venta Vacía", description: "Agrega al menos un artículo para generar un recibo.", variant: "destructive" });
+      toast({ title: "Venta Vacía", description: "Agrega al menos un artículo.", variant: "destructive" });
       return;
     }
     if (!customerName.trim()) {
-        toast({ title: "Nombre del Comprador", description: "Por favor, ingresa el nombre del comprador.", variant: "destructive"});
+        toast({ title: "Nombre del Comprador", description: "Ingresa el nombre del comprador.", variant: "destructive"});
+        return;
+    }
+    if (!paymentMethod) {
+        toast({ title: "Método de Pago", description: "Selecciona un método de pago.", variant: "destructive"});
+        return;
+    }
+    if (paymentMethod === 'transferencia' && !paymentProofFile) {
+        toast({ title: "Comprobante Requerido", description: "Sube el comprobante de pago para transferencia.", variant: "destructive"});
         return;
     }
     
     const saleData = {
-      id: `sale-${Date.now()}`, // Temporary ID
+      id: `sale-${Date.now()}`,
       customerName,
       items: saleItems,
       totalAmount: totalSaleAmount,
       date: new Date().toISOString(),
+      paymentMethod: paymentMethod as PaymentMethod,
+      paymentProofFileName: paymentMethod === 'transferencia' ? paymentProofFile?.name : undefined,
       generatedBy: mounted ? localStorage.getItem('userRole') || 'unknown' : 'unknown'
     };
 
-    // In a real app, save saleData to backend, then navigate
-    // For now, pass data via router query (limited size) or state management solution
-    // Storing in localStorage for simplicity to pass to receipt page.
     if (mounted) {
       localStorage.setItem('currentSaleForReceipt', JSON.stringify(saleData));
     }
@@ -128,7 +143,6 @@ export default function NewSalePage() {
           <CardDescription>Completa los detalles para registrar una nueva venta de uniformes.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-8">
-          {/* Customer Info */}
           <div>
             <Label htmlFor="customerName" className="text-base font-medium">Nombre del Comprador</Label>
             <Input 
@@ -140,7 +154,6 @@ export default function NewSalePage() {
             />
           </div>
 
-          {/* Add Item Form */}
           <Card className="border-dashed border-2 border-primary/50 shadow-inner">
             <CardHeader>
               <CardTitle className="text-lg">Agregar Prenda a la Venta</CardTitle>
@@ -182,7 +195,6 @@ export default function NewSalePage() {
             </CardFooter>
           </Card>
 
-          {/* Sale Items Table */}
           {saleItems.length > 0 && (
             <div>
               <h3 className="text-xl font-semibold mb-3">Artículos en esta Venta</h3>
@@ -203,9 +215,9 @@ export default function NewSalePage() {
                     <TableRow key={`${item.uniformId}-${item.size}-${index}`}>
                       <TableCell className="font-medium">{item.uniformName}</TableCell>
                       <TableCell>{item.size}</TableCell>
-                      <TableCell className="text-right">${item.unitPrice.toFixed(2)}</TableCell>
+                      <TableCell className="text-right">COP {item.unitPrice.toLocaleString('es-CO')}</TableCell>
                       <TableCell className="text-right">{item.quantity}</TableCell>
-                      <TableCell className="text-right font-semibold">${item.totalPrice.toFixed(2)}</TableCell>
+                      <TableCell className="text-right font-semibold">COP {item.totalPrice.toLocaleString('es-CO')}</TableCell>
                       <TableCell className="text-center">
                         <Button variant="ghost" size="icon" onClick={() => handleRemoveItem(item.uniformId, item.size)} className="text-destructive hover:text-destructive/80">
                           <Trash2 className="h-4 w-4" />
@@ -219,15 +231,45 @@ export default function NewSalePage() {
             </div>
           )}
 
-          {/* Total Amount */}
+          <div className="space-y-4">
+            <Label className="text-base font-medium">Método de Pago</Label>
+            <RadioGroup value={paymentMethod} onValueChange={(value) => setPaymentMethod(value as PaymentMethod)}>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="efectivo" id="efectivo" />
+                <Label htmlFor="efectivo">Efectivo</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="transferencia" id="transferencia" />
+                <Label htmlFor="transferencia">Transferencia Bancaria</Label>
+              </div>
+            </RadioGroup>
+
+            {paymentMethod === 'transferencia' && (
+              <div>
+                <Label htmlFor="paymentProof">Comprobante de Pago (Opcional)</Label>
+                <div className="mt-1 flex items-center gap-2">
+                  <Input 
+                    id="paymentProof" 
+                    type="file" 
+                    onChange={handlePaymentProofChange}
+                    className="w-full" 
+                    accept="image/*,.pdf"
+                  />
+                  <UploadCloud className="h-5 w-5 text-muted-foreground"/>
+                </div>
+                {paymentProofFile && <p className="text-xs text-muted-foreground mt-1">Archivo: {paymentProofFile.name}</p>}
+              </div>
+            )}
+          </div>
+
           <div className="text-right mt-6">
             <p className="text-2xl font-bold text-foreground">
-              Total: <span className="text-primary">${totalSaleAmount.toFixed(2)}</span>
+              Total: <span className="text-primary">COP {totalSaleAmount.toLocaleString('es-CO')}</span>
             </p>
           </div>
         </CardContent>
         <CardFooter className="flex justify-end">
-          <Button onClick={handleGenerateReceipt} size="lg" className="shadow-lg hover:shadow-xl" disabled={saleItems.length === 0 || !customerName.trim()}>
+          <Button onClick={handleGenerateReceipt} size="lg" className="shadow-lg hover:shadow-xl" disabled={saleItems.length === 0 || !customerName.trim() || !paymentMethod || (paymentMethod === 'transferencia' && !paymentProofFile)}>
             <FileSignature className="mr-2 h-5 w-5" />
             Generar Recibo
           </Button>

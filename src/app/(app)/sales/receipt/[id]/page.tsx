@@ -6,8 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { AppLogo } from '@/components/AppLogo';
-import type { Sale } from '@/lib/mock-data'; // Assuming Sale type is defined here
-import { Printer, ArrowLeft } from 'lucide-react';
+import type { Sale } from '@/lib/mock-data'; 
+import { Printer, ArrowLeft, Paperclip } from 'lucide-react';
 import { siteConfig } from '@/config/site';
 
 export default function ReceiptPage() {
@@ -24,21 +24,11 @@ export default function ReceiptPage() {
       const storedSaleData = localStorage.getItem('currentSaleForReceipt');
       if (storedSaleData) {
         const parsedData: Sale = JSON.parse(storedSaleData);
-        // Check if the ID matches, though in this mock, it's just the latest.
-        // In a real app, you'd fetch by receiptId.
         if (parsedData.id === receiptId) {
           setSaleData(parsedData);
         } else {
-          // Data mismatch or not found, redirect or show error
-          // For now, try to use it anyway if it's the only thing in localStorage
            setSaleData(parsedData); 
-           // Ideally: router.push('/sales/new'); // Or show "Receipt not found"
         }
-        // Optionally clear it after use if it's a one-time transfer mechanism
-        // localStorage.removeItem('currentSaleForReceipt'); 
-      } else {
-        // No data found, redirect or show error
-        // router.push('/sales/new'); // Or show "Receipt not found"
       }
     }
   }, [receiptId, router]);
@@ -107,13 +97,25 @@ export default function ReceiptPage() {
             </div>
             <div className="sm:text-right">
               <p className="font-semibold text-foreground">Fecha:</p>
-              <p className="text-muted-foreground">{new Date(saleData.date).toLocaleDateString('es-MX', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
-              <p className="text-muted-foreground">{new Date(saleData.date).toLocaleTimeString('es-MX')}</p>
+              <p className="text-muted-foreground">{new Date(saleData.date).toLocaleDateString('es-CO', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+              <p className="text-muted-foreground">{new Date(saleData.date).toLocaleTimeString('es-CO')}</p>
             </div>
-             <div>
+            <div>
               <p className="font-semibold text-foreground">Atendido por:</p>
               <p className="text-muted-foreground capitalize">{saleData.generatedBy}</p>
             </div>
+            <div>
+              <p className="font-semibold text-foreground">Método de Pago:</p>
+              <p className="text-muted-foreground capitalize">{saleData.paymentMethod === 'transferencia' ? 'Transferencia Bancaria' : 'Efectivo'}</p>
+            </div>
+            {saleData.paymentMethod === 'transferencia' && saleData.paymentProofFileName && (
+              <div className="sm:col-span-2">
+                <p className="font-semibold text-foreground">Comprobante de Pago:</p>
+                <p className="text-muted-foreground flex items-center gap-1">
+                  <Paperclip className="h-3 w-3" /> {saleData.paymentProofFileName} (Adjunto)
+                </p>
+              </div>
+            )}
           </div>
 
           <div>
@@ -134,9 +136,9 @@ export default function ReceiptPage() {
                   <TableRow key={`${item.uniformId}-${item.size}-${index}`}>
                     <TableCell className="font-medium">{item.uniformName}</TableCell>
                     <TableCell>{item.size}</TableCell>
-                    <TableCell className="text-right">${item.unitPrice.toFixed(2)}</TableCell>
+                    <TableCell className="text-right">COP {item.unitPrice.toLocaleString('es-CO')}</TableCell>
                     <TableCell className="text-right">{item.quantity}</TableCell>
-                    <TableCell className="text-right">${item.totalPrice.toFixed(2)}</TableCell>
+                    <TableCell className="text-right">COP {item.totalPrice.toLocaleString('es-CO')}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -146,9 +148,8 @@ export default function ReceiptPage() {
           
           <div className="mt-6 pt-4 border-t flex justify-end">
             <div className="w-full sm:w-auto text-right space-y-1">
-                {/* Add subtotal, IVA, etc. if needed here */}
                 <p className="text-xl font-bold text-foreground">
-                    TOTAL: <span className="text-primary">${saleData.totalAmount.toFixed(2)} MXN</span>
+                    TOTAL: <span className="text-primary">COP {saleData.totalAmount.toLocaleString('es-CO')}</span>
                 </p>
             </div>
           </div>
@@ -159,7 +160,6 @@ export default function ReceiptPage() {
         </CardFooter>
       </Card>
       
-      {/* CSS for printing */}
       <style jsx global>{`
         @media print {
           body * {
@@ -185,7 +185,7 @@ export default function ReceiptPage() {
           }
         }
       `}</style>
-      <div className="printable-area hidden"> {/* This div is for ensuring @media print styles are picked up by Tailwind for the receipt card */}
+      <div className="printable-area hidden">
         <Card>
             <CardHeader></CardHeader>
             <CardContent></CardContent>

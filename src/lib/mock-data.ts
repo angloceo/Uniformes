@@ -1,98 +1,138 @@
 export interface UniformSize {
   size: string;
-  price: number;
+  price: number; // Prices in COP
   stock: number;
   lowStockThreshold: number; // Threshold to trigger low stock alert
 }
 
 export interface Uniform {
   id: string;
-  name: string; // e.g., "Polo de gala (Hombre)"
-  category: string; // e.g., "Polo de gala", "Falda de gala"
-  imageUrl?: string; // Optional, for placeholder image
+  name: string; 
+  category: string; 
+  imageUrl?: string; 
   sizes: UniformSize[];
 }
 
 export const initialUniforms: Uniform[] = [
   {
-    id: 'polo-gala-h',
-    name: 'Polo de gala (Hombre)',
+    id: 'polo-h',
+    name: 'Camiseta Polo (Hombre)',
     category: 'Prenda Superior',
-    imageUrl: 'https://picsum.photos/seed/pologalah/200/200',
+    imageUrl: 'https://picsum.photos/seed/polohombre/200/200',
     sizes: [
-      { size: '2', price: 250, stock: 18, lowStockThreshold: 5 },
-      { size: '4', price: 250, stock: 22, lowStockThreshold: 5 },
-      { size: '6', price: 260, stock: 15, lowStockThreshold: 5 },
-      { size: 'S', price: 280, stock: 12, lowStockThreshold: 3 },
-      { size: 'M', price: 280, stock: 3, lowStockThreshold: 3 }, // Low stock example
-      { size: 'L', price: 280, stock: 8, lowStockThreshold: 3 },
-      { size: 'XL', price: 300, stock: 7, lowStockThreshold: 2 },
-      { size: 'XXL', price: 300, stock: 0, lowStockThreshold: 2 }, // Out of stock example
-      { size: 'XXXL', price: 320, stock: 4, lowStockThreshold: 2 },
+      { size: '2', price: 36000, stock: 18, lowStockThreshold: 5 },
+      { size: '4', price: 36000, stock: 22, lowStockThreshold: 5 },
+      { size: '6', price: 36000, stock: 15, lowStockThreshold: 5 },
+      { size: '8', price: 36000, stock: 15, lowStockThreshold: 5 },
+      { size: '10', price: 36000, stock: 15, lowStockThreshold: 5 },
+      { size: '12', price: 36000, stock: 15, lowStockThreshold: 5 },
+      { size: '14', price: 36000, stock: 15, lowStockThreshold: 5 },
+      { size: '16', price: 36000, stock: 15, lowStockThreshold: 5 },
+      { size: 'S', price: 38000, stock: 12, lowStockThreshold: 3 },
+      { size: 'M', price: 38000, stock: 3, lowStockThreshold: 3 },
+      { size: 'L', price: 38000, stock: 8, lowStockThreshold: 3 },
+      { size: 'XL', price: 38000, stock: 7, lowStockThreshold: 2 },
+      { size: 'XXL', price: 38000, stock: 0, lowStockThreshold: 2 },
     ],
   },
   {
-    id: 'polo-gala-m',
-    name: 'Polo de gala (Mujer)',
+    id: 'polo-m',
+    name: 'Camiseta Polo (Mujer)',
     category: 'Prenda Superior',
-    imageUrl: 'https://picsum.photos/seed/pologalam/200/200',
+    imageUrl: 'https://picsum.photos/seed/polomujer/200/200',
     sizes: [
-      { size: '2', price: 250, stock: 20, lowStockThreshold: 5 },
-      { size: '4', price: 250, stock: 25, lowStockThreshold: 5 },
-      { size: 'S', price: 280, stock: 18, lowStockThreshold: 3 },
-      { size: 'M', price: 280, stock: 13, lowStockThreshold: 3 },
-      { size: 'L', price: 280, stock: 9, lowStockThreshold: 3 },
+      { size: '2', price: 36000, stock: 20, lowStockThreshold: 5 },
+      { size: '4', price: 36000, stock: 25, lowStockThreshold: 5 },
+      { size: '6', price: 36000, stock: 20, lowStockThreshold: 5 },
+      { size: '8', price: 36000, stock: 20, lowStockThreshold: 5 },
+      { size: '10', price: 36000, stock: 20, lowStockThreshold: 5 },
+      { size: '12', price: 36000, stock: 20, lowStockThreshold: 5 },
+      { size: '14', price: 36000, stock: 20, lowStockThreshold: 5 },
+      { size: '16', price: 36000, stock: 20, lowStockThreshold: 5 },
+      { size: 'S', price: 38000, stock: 18, lowStockThreshold: 3 },
+      { size: 'M', price: 38000, stock: 13, lowStockThreshold: 3 },
+      { size: 'L', price: 38000, stock: 9, lowStockThreshold: 3 },
+      { size: 'XL', price: 38000, stock: 9, lowStockThreshold: 3 },
+      { size: 'XXL', price: 38000, stock: 9, lowStockThreshold: 3 },
     ],
   },
   {
-    id: 'falda-gala',
-    name: 'Falda de gala (Mujer)',
+    id: 'falda',
+    name: 'Falda Escolar',
     category: 'Prenda Inferior',
-    imageUrl: 'https://picsum.photos/seed/faldagala/200/200',
+    imageUrl: 'https://picsum.photos/seed/faldaescolar/200/200',
     sizes: [
-      { size: '4', price: 300, stock: 15, lowStockThreshold: 4 },
-      { size: '6', price: 300, stock: 12, lowStockThreshold: 4 },
-      { size: '8', price: 320, stock: 10, lowStockThreshold: 3 },
-      { size: 'S', price: 350, stock: 7, lowStockThreshold: 2 },
-      { size: 'M', price: 350, stock: 6, lowStockThreshold: 2 },
+      { size: '2', price: 36000, stock: 15, lowStockThreshold: 4 },
+      { size: '4', price: 36000, stock: 12, lowStockThreshold: 4 },
+      { size: '6', price: 36000, stock: 10, lowStockThreshold: 3 },
+      { size: '8', price: 36000, stock: 10, lowStockThreshold: 3 },
+      { size: '10', price: 36000, stock: 10, lowStockThreshold: 3 },
+      { size: '12', price: 36000, stock: 10, lowStockThreshold: 3 },
+      { size: '14', price: 36000, stock: 10, lowStockThreshold: 3 },
+      { size: '16', price: 36000, stock: 10, lowStockThreshold: 3 },
+      { size: 'S', price: 38000, stock: 7, lowStockThreshold: 2 },
+      { size: 'M', price: 38000, stock: 6, lowStockThreshold: 2 },
+      { size: 'L', price: 38000, stock: 6, lowStockThreshold: 2 },
     ],
   },
   {
-    id: 'camiseta-deportiva',
-    name: 'Camiseta deportiva',
+    id: 'camiseta-deporte',
+    name: 'Camiseta Deporte',
     category: 'Deportivo',
-    imageUrl: 'https://picsum.photos/seed/camisetadep/200/200',
+    imageUrl: 'https://picsum.photos/seed/camisetadeporte/200/200',
     sizes: [
-      { size: '2', price: 180, stock: 30, lowStockThreshold: 8 },
-      { size: '4', price: 180, stock: 28, lowStockThreshold: 8 },
-      { size: 'S', price: 200, stock: 20, lowStockThreshold: 5 },
-      { size: 'M', price: 200, stock: 22, lowStockThreshold: 5 },
-      { size: 'L', price: 200, stock: 15, lowStockThreshold: 5 },
-      { size: 'XL', price: 220, stock: 10, lowStockThreshold: 3 },
+      { size: '2', price: 32000, stock: 30, lowStockThreshold: 8 },
+      { size: '4', price: 32000, stock: 28, lowStockThreshold: 8 },
+      { size: '6', price: 32000, stock: 28, lowStockThreshold: 8 },
+      { size: '8', price: 32000, stock: 28, lowStockThreshold: 8 },
+      { size: '10', price: 32000, stock: 28, lowStockThreshold: 8 },
+      { size: '12', price: 32000, stock: 28, lowStockThreshold: 8 },
+      { size: '14', price: 32000, stock: 28, lowStockThreshold: 8 },
+      { size: '16', price: 32000, stock: 28, lowStockThreshold: 8 },
+      { size: 'S', price: 34000, stock: 20, lowStockThreshold: 5 },
+      { size: 'M', price: 34000, stock: 22, lowStockThreshold: 5 },
+      { size: 'L', price: 34000, stock: 15, lowStockThreshold: 5 },
+      { size: 'XL', price: 34000, stock: 10, lowStockThreshold: 3 },
     ],
   },
   {
-    id: 'sudadera-deportiva',
-    name: 'Sudadera deportiva',
+    id: 'sudadera',
+    name: 'Sudadera',
     category: 'Deportivo',
-    imageUrl: 'https://picsum.photos/seed/sudaderadep/200/200',
+    imageUrl: 'https://picsum.photos/seed/sudadera/200/200',
     sizes: [
-      { size: 'S', price: 450, stock: 10, lowStockThreshold: 3 },
-      { size: 'M', price: 450, stock: 8, lowStockThreshold: 3 },
-      { size: 'L', price: 450, stock: 6, lowStockThreshold: 2 },
-      { size: 'XL', price: 480, stock: 4, lowStockThreshold: 2 },
+      { size: '2', price: 60000, stock: 10, lowStockThreshold: 3 },
+      { size: '4', price: 60000, stock: 10, lowStockThreshold: 3 },
+      { size: '6', price: 60000, stock: 10, lowStockThreshold: 3 },
+      { size: '8', price: 60000, stock: 10, lowStockThreshold: 3 },
+      { size: '10', price: 60000, stock: 10, lowStockThreshold: 3 },
+      { size: '12', price: 60000, stock: 10, lowStockThreshold: 3 },
+      { size: '14', price: 60000, stock: 10, lowStockThreshold: 3 },
+      { size: '16', price: 60000, stock: 10, lowStockThreshold: 3 },
+      { size: 'S', price: 62000, stock: 8, lowStockThreshold: 3 },
+      { size: 'M', price: 62000, stock: 6, lowStockThreshold: 2 },
+      { size: 'L', price: 62000, stock: 4, lowStockThreshold: 2 },
+      { size: 'XL', price: 62000, stock: 4, lowStockThreshold: 2 },
     ],
   },
   {
     id: 'chaqueta',
     name: 'Chaqueta',
     category: 'Abrigo',
-    imageUrl: 'https://picsum.photos/seed/chaqueta/200/200',
+    imageUrl: 'https://picsum.photos/seed/chaquetauniforme/200/200',
     sizes: [
-      { size: 'S', price: 550, stock: 7, lowStockThreshold: 2 },
-      { size: 'M', price: 550, stock: 9, lowStockThreshold: 2 },
-      { size: 'L', price: 550, stock: 5, lowStockThreshold: 2 },
-      { size: 'XL', price: 580, stock: 3, lowStockThreshold: 1 },
+      { size: '2', price: 75000, stock: 7, lowStockThreshold: 2 },
+      { size: '4', price: 75000, stock: 7, lowStockThreshold: 2 },
+      { size: '6', price: 75000, stock: 7, lowStockThreshold: 2 },
+      { size: '8', price: 75000, stock: 7, lowStockThreshold: 2 },
+      { size: '10', price: 75000, stock: 7, lowStockThreshold: 2 },
+      { size: '12', price: 75000, stock: 7, lowStockThreshold: 2 },
+      { size: '14', price: 75000, stock: 7, lowStockThreshold: 2 },
+      { size: '16', price: 75000, stock: 7, lowStockThreshold: 2 },
+      { size: 'S', price: 78000, stock: 9, lowStockThreshold: 2 },
+      { size: 'M', price: 78000, stock: 5, lowStockThreshold: 2 },
+      { size: 'L', price: 78000, stock: 3, lowStockThreshold: 1 },
+      { size: 'XL', price: 78000, stock: 3, lowStockThreshold: 1 },
     ],
   },
 ];
@@ -106,12 +146,16 @@ export interface SaleItem {
   totalPrice: number;
 }
 
+export type PaymentMethod = 'efectivo' | 'transferencia';
+
 export interface Sale {
   id: string;
   date: string; // ISO string
   customerName: string;
   items: SaleItem[];
   totalAmount: number;
+  paymentMethod: PaymentMethod;
+  paymentProofFileName?: string; // Store filename for mock
   generatedBy: string; // 'admin' | 'secretary'
 }
 
@@ -122,10 +166,11 @@ export const mockSales: Sale[] = [
     date: new Date().toISOString(),
     customerName: 'Ana Pérez',
     items: [
-      { uniformId: 'polo-gala-h', uniformName: 'Polo de gala (Hombre)', size: 'M', quantity: 1, unitPrice: 280, totalPrice: 280 },
-      { uniformId: 'falda-gala', uniformName: 'Falda de gala (Mujer)', size: 'S', quantity: 1, unitPrice: 350, totalPrice: 350 },
+      { uniformId: 'polo-h', uniformName: 'Camiseta Polo (Hombre)', size: 'M', quantity: 1, unitPrice: 38000, totalPrice: 38000 },
+      { uniformId: 'falda', uniformName: 'Falda Escolar', size: 'S', quantity: 1, unitPrice: 38000, totalPrice: 38000 },
     ],
-    totalAmount: 630,
+    totalAmount: 76000,
+    paymentMethod: 'efectivo',
     generatedBy: 'admin',
   }
 ];

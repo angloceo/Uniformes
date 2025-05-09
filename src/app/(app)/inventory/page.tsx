@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { PackagePlus, Search, Filter } from "lucide-react";
-import { initialUniforms, type Uniform, type UniformSize } from '@/lib/mock-data';
+import { initialUniforms, type Uniform } from '@/lib/mock-data';
 import { Input } from '@/components/ui/input';
 
 export default function InventoryPage() {
@@ -17,23 +17,22 @@ export default function InventoryPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Simulate fetching data
     setUniforms(initialUniforms);
     setLoading(false);
   }, []);
 
   const getStockStatus = (stock: number, lowStockThreshold: number): { label: string; variant: "default" | "secondary" | "destructive" | "outline" } => {
     if (stock === 0) return { label: "Agotado", variant: "destructive" };
-    if (stock <= lowStockThreshold) return { label: "Bajo Stock", variant: "destructive" }; // Using destructive for orange/red like warning
-    if (stock <= lowStockThreshold * 2) return { label: "Medio", variant: "outline" }; // Outline for orange like warning
-    return { label: "Suficiente", variant: "default" }; // Default for green like success
+    if (stock <= lowStockThreshold) return { label: "Bajo Stock", variant: "destructive" };
+    if (stock <= lowStockThreshold * 2) return { label: "Medio", variant: "outline" }; 
+    return { label: "Suficiente", variant: "default" }; 
   };
 
   const filteredUniforms = uniforms.flatMap(uniform =>
     uniform.sizes.map(size => ({
       ...uniform,
       ...size,
-      uniformName: uniform.name, // ensure uniform name is available for searching
+      uniformName: uniform.name, 
       sizeSpecificId: `${uniform.id}-${size.size}`
     }))
   ).filter(item =>
@@ -69,7 +68,7 @@ export default function InventoryPage() {
           </div>
           <Link href="/inventory/add" passHref>
             <Button variant="default" className="shadow hover:shadow-md">
-              <PackagePlus className="mr-2 h-4 w-4" /> Ingresar Nueva Prenda
+              <PackagePlus className="mr-2 h-4 w-4" /> Ingresar Nuevo Stock
             </Button>
           </Link>
         </CardHeader>
@@ -124,7 +123,7 @@ export default function InventoryPage() {
                         <TableCell className="font-medium">{item.uniformName}</TableCell>
                         <TableCell className="text-muted-foreground">{item.category}</TableCell>
                         <TableCell>{item.size}</TableCell>
-                        <TableCell className="text-right">${item.price.toFixed(2)}</TableCell>
+                        <TableCell className="text-right">COP {item.price.toLocaleString('es-CO')}</TableCell>
                         <TableCell className="text-right font-semibold">{item.stock}</TableCell>
                         <TableCell className="text-center">
                           <Badge variant={status.variant} className="shadow-sm">{status.label}</Badge>

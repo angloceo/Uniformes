@@ -7,15 +7,14 @@ import { Archive, BarChart3, DollarSign, PackagePlus, ShoppingCart, Users, Alert
 import { useEffect, useState } from "react";
 import { initialUniforms, mockSales, type Uniform, type Sale } from "@/lib/mock-data";
 
-// Placeholder data, replace with actual data fetching
 const getDashboardData = async () => {
-  // Simulate API delay
   await new Promise(resolve => setTimeout(resolve, 500));
   
   const today = new Date().toISOString().split('T')[0];
   const salesToday = mockSales.filter(sale => sale.date.startsWith(today));
   const totalSalesToday = salesToday.reduce((sum, sale) => sum + sale.totalAmount, 0);
-  const itemsSoldToday = salesToday.reduce((sum, sale) => sum + sale.items.length, 0);
+  const itemsSoldCount = salesToday.reduce((sum, sale) => sum + sale.items.reduce((itemSum, item) => itemSum + item.quantity, 0), 0);
+
 
   let criticalInventoryCount = 0;
   initialUniforms.forEach(uniform => {
@@ -28,12 +27,12 @@ const getDashboardData = async () => {
 
   return {
     totalSalesToday,
-    itemsSoldToday,
+    itemsSoldToday: itemsSoldCount, // Use itemsSoldCount calculated above
     criticalInventoryCount,
-    recentActivity: [
-      { type: "Venta", description: "Venta #001 registrada", time: "Hace 10 minutos", icon: ShoppingCart },
-      { type: "Inventario", description: "Stock de 'Polo de gala (Hombre) - M' bajo", time: "Hace 1 hora", icon: AlertTriangle },
-      { type: "Ingreso", description: "Ingreso de 20 'Camiseta Deportiva - S'", time: "Hace 3 horas", icon: PackagePlus },
+    recentActivity: [ // Sample recent activity
+      { type: "Venta", description: "Venta #00124 registrada", time: "Hace 10 minutos", icon: ShoppingCart },
+      { type: "Inventario", description: "Stock de 'Camiseta Polo (Hombre) - M' bajo", time: "Hace 1 hora", icon: AlertTriangle },
+      { type: "Ingreso", description: "Ingreso de 20 'Camiseta Deporte - S'", time: "Hace 3 horas", icon: PackagePlus },
     ]
   };
 };
@@ -89,10 +88,9 @@ export default function DashboardPage() {
     );
   }
 
-
   const summaryCards = [
-    { title: "Ventas del Día", value: `$${stats.totalSalesToday.toFixed(2)}`, description: `${stats.itemsSoldToday} prendas vendidas hoy`, icon: DollarSign, color: "text-green-500" },
-    { title: "Inventario Crítico", value: `${stats.criticalInventoryCount} Items`, description: "Prendas con bajo stock", icon: AlertTriangle, color: "text-orange-500" },
+    { title: "Ventas del Día", value: `COP ${stats.totalSalesToday.toLocaleString('es-CO')}`, description: `${stats.itemsSoldToday} prendas vendidas hoy`, icon: DollarSign, color: "text-green-500" },
+    { title: "Inventario Crítico", value: `${stats.criticalInventoryCount} Ítems`, description: "Prendas con bajo stock", icon: AlertTriangle, color: "text-orange-500" },
     { title: "Total Prendas (Tipos)", value: `${initialUniforms.length} Tipos`, description: "Variedad de uniformes disponibles", icon: Archive, color: "text-blue-500" },
   ];
 

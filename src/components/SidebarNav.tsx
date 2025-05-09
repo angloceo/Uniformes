@@ -15,17 +15,15 @@ import {
   ShoppingCart,
   Archive,
   PackagePlus,
-  FileText,
   Users,
-  Settings,
   DollarSign,
   Boxes,
   LineChart,
-  ListPlus,
   ReceiptText,
+  LogOut,
+  Cog, // Added Cog for Admin
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import { siteConfig } from "@/config/site";
 import { AppLogo } from "./AppLogo";
 import { Separator } from "./ui/separator";
 import { Button } from "./ui/button";
@@ -54,7 +52,7 @@ const navItems: NavItem[] = [
     icon: DollarSign,
     submenu: [
       { title: "Registrar Venta", href: "/sales/new", icon: ShoppingCart },
-      { title: "Historial de Ventas", href: "/sales/history", icon: ReceiptText, disabled: true }, // Placeholder
+      { title: "Historial de Ventas", href: "/sales/history", icon: ReceiptText, disabled: true }, 
     ],
   },
   {
@@ -70,7 +68,12 @@ const navItems: NavItem[] = [
     title: "Reportes",
     href: "/reports",
     icon: LineChart,
-    disabled: true, // Placeholder
+    disabled: true, 
+  },
+  {
+    title: "Administración",
+    href: "/admin",
+    icon: Cog, 
   },
 ];
 
@@ -96,7 +99,7 @@ export function SidebarNav() {
   };
   
   if (!mounted) {
-     return null; // Or a loading skeleton for sidebar
+     return null; 
   }
 
   return (
@@ -112,18 +115,17 @@ export function SidebarNav() {
           {navItems.map((item) =>
             item.submenu ? (
               <SidebarMenuItem key={item.title} className="relative">
-                {/* This is a conceptual CollapsibleTrigger equivalent */}
                 <SidebarMenuButton
                   isActive={pathname.startsWith(item.href)}
                   tooltip={{children: item.title, side: 'right', align: 'center' }}
                   className="justify-between"
-                  // Add open/close state management here if making it collapsible
+                  disabled={item.disabled}
+                  aria-disabled={item.disabled}
                 >
                   <div className="flex items-center gap-2">
                     <item.icon className="h-4 w-4" />
                     <span>{item.title}</span>
                   </div>
-                  {/* Add ChevronDown/Right icon here for collapsible */}
                 </SidebarMenuButton>
                 <SidebarMenuSub>
                   {item.submenu.map((subItem) => (
@@ -168,7 +170,7 @@ export function SidebarNav() {
             </div>
           )}
           <Button variant="ghost" className="w-full justify-start gap-2 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground" onClick={handleLogout}>
-            <Users className="h-4 w-4" /> {/* Using Users as a placeholder for Logout icon */}
+            <LogOut className="h-4 w-4" /> {/* Changed icon to LogOut */}
             Cerrar Sesión
           </Button>
         </div>
