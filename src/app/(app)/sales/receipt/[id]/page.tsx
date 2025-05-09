@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState } from 'react';
@@ -17,6 +18,7 @@ export default function ReceiptPage() {
 
   const [saleData, setSaleData] = useState<Sale | null>(null);
   const [mounted, setMounted] = useState(false);
+  const [displayId, setDisplayId] = useState<string>('');
 
   useEffect(() => {
     setMounted(true);
@@ -24,14 +26,25 @@ export default function ReceiptPage() {
       const storedSaleData = localStorage.getItem('currentSaleForReceipt');
       if (storedSaleData) {
         const parsedData: Sale = JSON.parse(storedSaleData);
+        // Ensure we are showing the correct receipt if multiple tabs were open or similar edge cases
+        // For this mock, we'll assume currentSaleForReceipt is the one just generated.
+        // In a real app, you'd fetch by ID.
         if (parsedData.id === receiptId) {
-          setSaleData(parsedData);
+           setSaleData(parsedData);
+           const datePart = new Date(parsedData.date).toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\//g, '');
+           const sequencePart = parsedData.id.substring(parsedData.id.length - 4).toUpperCase(); // Use last 4 chars of timestamp as mock sequence
+           setDisplayId(`${datePart}-${sequencePart}`);
         } else {
-           setSaleData(parsedData); 
+            // Fallback or redirect if ID mismatch, for now, show it, but log a warning.
+            console.warn("Receipt ID mismatch, but showing stored data for demo purposes.");
+            setSaleData(parsedData); // In a real app, you might redirect or show error.
+            const datePart = new Date(parsedData.date).toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\//g, '');
+            const sequencePart = parsedData.id.substring(parsedData.id.length - 4).toUpperCase();
+            setDisplayId(`${datePart}-${sequencePart}`);
         }
       }
     }
-  }, [receiptId, router]);
+  }, [receiptId]);
   
   const handlePrint = () => {
     if (mounted) {
@@ -80,13 +93,13 @@ export default function ReceiptPage() {
             <AppLogo showColegioLogo={true} iconClassName="h-10 w-10" textClassName="text-2xl" />
             <div className="text-right">
               <CardTitle className="text-2xl font-bold text-primary">Recibo de Venta</CardTitle>
-              <p className="text-sm text-muted-foreground">ID Recibo: {saleData.id}</p>
+              <p className="text-sm text-muted-foreground">ID Recibo: {displayId}</p>
             </div>
           </div>
           <div className="mt-4 text-sm text-muted-foreground">
             <p><strong>Colegio Anglo Español</strong></p>
-            <p>Dirección Ficticia 123, Ciudad</p>
-            <p>Tel: (55) 1234-5678</p>
+            <p>Km 1 Vereda Aguas Claras, El Carmen de Viboral</p>
+            <p>Tel: +57 324 5665949</p>
           </div>
         </CardHeader>
         <CardContent className="py-6 space-y-6">
@@ -154,9 +167,9 @@ export default function ReceiptPage() {
             </div>
           </div>
         </CardContent>
-        <CardFooter className="border-t pt-4 text-center text-xs text-muted-foreground">
+        <CardFooter className="border-t pt-4 text-center text-xs text-muted-foreground flex-col space-y-1">
           <p>Gracias por su compra. Conserva este recibo para cualquier aclaración.</p>
-          <p className="mt-1">&copy; {new Date().getFullYear()} {siteConfig.name} - Colegio Anglo Español</p>
+          <p>&copy; {new Date().getFullYear()} {siteConfig.name}</p>
         </CardFooter>
       </Card>
       
@@ -185,8 +198,8 @@ export default function ReceiptPage() {
           }
         }
       `}</style>
-      <div className="printable-area hidden">
-        <Card>
+      <div className="printable-area hidden"> {/* This div is for print media query targeting */}
+        <Card> {/* Content structure mirrors above for consistent print output if needed, though CSS handles visibility */}
             <CardHeader></CardHeader>
             <CardContent></CardContent>
             <CardFooter></CardFooter>
