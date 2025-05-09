@@ -143,9 +143,6 @@ export default function LoginPage() {
               Iniciar Sesión
             </Button>
           </form>
-          <p className="mt-4 text-xs text-muted-foreground text-center">
-            Usuarios de prueba: (admin / admin123) o (secretary / secretary123).
-          </p>
         </CardContent>
       </Card>
       <footer className="mt-8 text-center text-sm text-muted-foreground">
