@@ -1,5 +1,6 @@
 import type { SVGProps } from 'react';
 import { siteConfig } from '@/config/site';
+import { cn } from '@/lib/utils';
 
 // Placeholder for Colegio Anglo Español logo if provided as SVG
 const ColegioLogoSvg = (props: SVGProps<SVGSVGElement>) => (
@@ -13,7 +14,7 @@ const ColegioLogoSvg = (props: SVGProps<SVGSVGElement>) => (
 
 
 interface AppLogoProps {
-  show ColegioLogo?: boolean;
+  showColegioLogo?: boolean;
   className?: string;
   iconClassName?: string;
   textClassName?: string;
@@ -49,9 +50,3 @@ export function AppLogo({ showColegioLogo = false, className, iconClassName, tex
     </div>
   );
 }
-
-// Helper for cn if not globally available in this context (it should be via imports)
-// For safety, can be defined here too, or ensure proper setup.
-// This is just a placeholder in case it's needed for some reason.
-// Ideally, cn is imported from "@/lib/utils"
-const cn = (...classes: (string | undefined | null | false)[]) => classes.filter(Boolean).join(' ');
