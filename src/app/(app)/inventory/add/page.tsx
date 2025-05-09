@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from "@/hooks/use-toast";
-import { initialUniforms, type Uniform } from '@/lib/mock-data';
+import { initialUniforms, type Uniform, type StockEntry, type StockEntryItemDetails } from '@/lib/mock-data';
 import { ArrowLeft, PackagePlus, Save, Filter } from 'lucide-react';
 
 const ALL_CATEGORIES_VALUE = "--all--";
@@ -26,6 +26,8 @@ export default function AddStockPage() {
   const [entryDate, setEntryDate] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [mounted, setMounted] = useState(false);
+  const [entryNotes, setEntryNotes] = useState<string>('');
+
 
   useEffect(() => {
     setMounted(true);
@@ -68,12 +70,24 @@ export default function AddStockPage() {
 
     let currentUniformsData = JSON.parse(localStorage.getItem('updatedUniformsData') || JSON.stringify(initialUniforms)) as Uniform[];
     let changesMade = false;
+    const enteredItemsDetails: StockEntryItemDetails[] = [];
 
     Object.entries(stockInputs).forEach(([uniformId, sizes]) => {
       Object.entries(sizes).forEach(([size, quantityStr]) => {
         const quantityToAdd = parseInt(quantityStr, 10);
         if (!isNaN(quantityToAdd) && quantityToAdd > 0) {
           changesMade = true;
+          const uniform = allUniforms.find(u => u.id === uniformId);
+          if (uniform) {
+            enteredItemsDetails.push({
+              uniformId,
+              uniformName: uniform.name,
+              category: uniform.category,
+              size,
+              quantityAdded: quantityToAdd,
+            });
+          }
+
           currentUniformsData = currentUniformsData.map(uni => {
             if (uni.id === uniformId) {
               return {
@@ -102,12 +116,31 @@ export default function AddStockPage() {
     }
 
     localStorage.setItem('updatedUniformsData', JSON.stringify(currentUniformsData));
-    setAllUniforms(currentUniformsData); // Update local state for UI consistency if needed
-    setStockInputs({}); // Reset inputs
+    setAllUniforms(currentUniformsData); 
+    setStockInputs({}); 
+    
+    // Record stock entry history
+    if (enteredItemsDetails.length > 0) {
+      const totalQuantityAddedInEntry = enteredItemsDetails.reduce((sum, item) => sum + item.quantityAdded, 0);
+      const newStockEntry: StockEntry = {
+        id: `stock-entry-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+        date: entryDate || new Date().toISOString().split('T')[0],
+        recordedAt: new Date().toISOString(),
+        enteredBy: localStorage.getItem('userRole') || 'sistema',
+        items: enteredItemsDetails,
+        totalQuantityAdded: totalQuantityAddedInEntry,
+        notes: entryNotes.trim() || `Ingreso de ${totalQuantityAddedInEntry} unidades.`,
+      };
+
+      const currentStockEntries = JSON.parse(localStorage.getItem('stockEntryHistory') || '[]') as StockEntry[];
+      localStorage.setItem('stockEntryHistory', JSON.stringify([...currentStockEntries, newStockEntry]));
+      setEntryNotes(''); // Reset notes field
+    }
+
 
     toast({
       title: "Stock Actualizado",
-      description: "Las cantidades ingresadas han sido añadidas al inventario.",
+      description: "Las cantidades ingresadas han sido añadidas al inventario y el ingreso ha sido registrado en el historial.",
     });
     
     router.push('/inventory'); 
@@ -155,8 +188,8 @@ export default function AddStockPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          <div className="flex flex-col sm:flex-row gap-4 items-end">
-            <div className="flex-grow sm:flex-grow-0 sm:w-1/2">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+            <div className="md:col-span-1">
               <Label htmlFor="category-filter">Filtrar por Categoría</Label>
               <Select value={selectedCategory} onValueChange={setSelectedCategory}>
                 <SelectTrigger id="category-filter" className="shadow hover:shadow-md mt-1">
@@ -171,13 +204,24 @@ export default function AddStockPage() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="flex-grow">
-              <Label htmlFor="entryDate">Fecha de Ingreso General</Label>
+            <div className="md:col-span-1">
+              <Label htmlFor="entryDate">Fecha de Ingreso</Label>
               <Input 
                 id="entryDate" 
                 type="date" 
                 value={entryDate}
                 onChange={(e) => setEntryDate(e.target.value)}
+                className="mt-1"
+              />
+            </div>
+            <div className="md:col-span-1">
+              <Label htmlFor="entryNotes">Notas (Opcional)</Label>
+              <Input
+                id="entryNotes"
+                type="text"
+                placeholder="Ej: Pedido Proveedor X"
+                value={entryNotes}
+                onChange={(e) => setEntryNotes(e.target.value)}
                 className="mt-1"
               />
             </div>

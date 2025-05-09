@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { PackagePlus, Search, Shirt, Zap, Layers, Wind, GripVertical } from "lucide-react";
+import { PackagePlus, Search, Shirt, Zap, Layers, Wind, GripVertical, History } from "lucide-react"; // Added History
 import { initialUniforms, type Uniform, type UniformSize } from '@/lib/mock-data';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -34,7 +34,7 @@ const PantsIconSvg = (props: SVGProps<SVGSVGElement>) => (
 const garmentIcons: Record<Uniform['category'], React.ComponentType<React.SVGProps<SVGSVGElement>>> = {
   'Camiseta Polo': Shirt,
   'Camiseta Deporte': Zap,
-  'Sudadera': PantsIconSvg, // Changed to PantsIconSvg
+  'Sudadera': PantsIconSvg, 
   'Falda': Layers,
   'Chaqueta': Wind,
 };
@@ -118,11 +118,18 @@ export default function InventoryPage() {
             <CardTitle className="text-2xl font-semibold">Inventario de Uniformes</CardTitle>
             <CardDescription>Visualiza y gestiona el stock de uniformes.</CardDescription>
           </div>
-          <Link href="/inventory/add" passHref>
-            <Button variant="default" className="shadow hover:shadow-md">
-              <PackagePlus className="mr-2 h-4 w-4" /> Ingresar Nuevo Stock
-            </Button>
-          </Link>
+          <div className="flex flex-col sm:flex-row gap-2">
+            <Link href="/inventory/add" passHref>
+              <Button variant="default" className="shadow hover:shadow-md w-full sm:w-auto">
+                <PackagePlus className="mr-2 h-4 w-4" /> Ingresar Nuevo Stock
+              </Button>
+            </Link>
+            <Link href="/inventory/history" passHref>
+              <Button variant="outline" className="shadow hover:shadow-md w-full sm:w-auto">
+                <History className="mr-2 h-4 w-4" /> Ver Historial de Ingresos
+              </Button>
+            </Link>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="mb-6 flex flex-col sm:flex-row gap-4">

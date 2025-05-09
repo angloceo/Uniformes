@@ -25,6 +25,7 @@ import {
   ShieldCheck, // For general admin/settings
   TrendingUp, // For profit management
   Settings2, // More specific for settings
+  History, // For history
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { AppLogo } from "./AppLogo";
@@ -66,6 +67,7 @@ const navItemsBase: NavItem[] = [
     submenu: [
       { title: "Ver Stock", href: "/inventory", icon: Archive },
       { title: "Ingresar Stock", href: "/inventory/add", icon: PackagePlus },
+      { title: "Historial de Ingresos", href: "/inventory/history", icon: History },
     ],
   },
   {

@@ -159,8 +159,8 @@ export let mockSales: Sale[] = [ // Changed to let for potential updates
     date: new Date(Date.now() - 86400000).toISOString(), // Yesterday
     customerName: 'Ana Pérez',
     items: [
-      { uniformId: 'polo-unisex', uniformName: 'Camiseta Polo', size: 'M', quantity: 1, unitPrice: 40000, unitCost: 26000, totalPrice: 40000, totalCost: 26000 }, 
-      { uniformId: 'falda', uniformName: 'Falda Escolar', size: 'S', quantity: 1, unitPrice: 40000, unitCost: 25500, totalPrice: 40000, totalCost: 25500 }, 
+      { uniformId: 'polo-unisex', uniformName: 'Camiseta Polo', size: 'M', quantity: 1, unitPrice: 40000, cost: 26000, totalPrice: 40000, totalCost: 26000 }, 
+      { uniformId: 'falda', uniformName: 'Falda Escolar', size: 'S', quantity: 1, unitPrice: 40000, cost: 25500, totalPrice: 40000, totalCost: 25500 }, 
     ],
     totalAmount: 80000,
     totalCostAmount: 51500,
@@ -173,7 +173,7 @@ export let mockSales: Sale[] = [ // Changed to let for potential updates
     date: new Date().toISOString(), // Today
     customerName: 'Carlos López',
     items: [
-      { uniformId: 'camiseta-deporte', uniformName: 'Camiseta Deporte', size: '10', quantity: 2, unitPrice: 34000, unitCost: 22000, totalPrice: 68000, totalCost: 44000 }, 
+      { uniformId: 'camiseta-deporte', uniformName: 'Camiseta Deporte', size: '10', quantity: 2, unitPrice: 34000, cost: 22000, totalPrice: 68000, totalCost: 44000 }, 
     ],
     totalAmount: 68000,
     totalCostAmount: 44000,
@@ -188,3 +188,53 @@ export const setMockSales = (newSales: Sale[]) => {
   mockSales = newSales;
 };
 
+// Stock Entry History
+export interface StockEntryItemDetails {
+  uniformId: string;
+  uniformName: string;
+  category: Uniform['category'];
+  size: string;
+  quantityAdded: number;
+}
+
+export interface StockEntry {
+  id: string; // e.g., 'stock-entry-timestamp-random'
+  date: string; // ISO string for the date of entry (user selected)
+  recordedAt: string; // ISO string for when the record was actually made (system timestamp)
+  enteredBy: string; // User role or name
+  items: StockEntryItemDetails[];
+  totalQuantityAdded: number;
+  notes?: string; // Optional general notes for the whole entry
+}
+
+export let mockStockEntries: StockEntry[] = [];
+
+export const setMockStockEntries = (newEntries: StockEntry[]) => {
+  mockStockEntries = newEntries;
+};
+
+// Initialize stock entries from localStorage if available
+if (typeof window !== 'undefined') {
+  const storedSales = localStorage.getItem('mockSales');
+  if (storedSales) {
+    try {
+      mockSales = JSON.parse(storedSales);
+    } catch (e) {
+      console.error("Failed to parse mockSales from localStorage", e);
+      localStorage.removeItem('mockSales');
+    }
+  }
+
+  const storedUniforms = localStorage.getItem('updatedUniformsData');
+  // No need to set initialUniforms here as it's a const, other pages handle this.
+
+  const storedStockEntries = localStorage.getItem('stockEntryHistory');
+  if (storedStockEntries) {
+    try {
+      mockStockEntries = JSON.parse(storedStockEntries);
+    } catch (e) {
+      console.error("Failed to parse stockEntryHistory from localStorage", e);
+      localStorage.removeItem('stockEntryHistory'); 
+    }
+  }
+}
