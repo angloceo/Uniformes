@@ -8,16 +8,18 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { mockSales, type Sale } from '@/lib/mock-data';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { mockSales, type Sale, initialUniforms, type Uniform } from '@/lib/mock-data';
 import { formatDisplayId } from '@/lib/utils';
-import { ReceiptText, Eye, Search, ArrowLeft } from 'lucide-react';
+import { ReceiptText, Eye, Search, ArrowLeft, Trash2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useToast } from "@/hooks/use-toast";
 
 const ITEMS_PER_PAGE = 10;
 
 export default function SalesHistoryPage() {
   const router = useRouter();
+  const { toast } = useToast();
   const [allSales, setAllSales] = useState<Sale[]>([]);
   const [loading, setLoading] = useState(true);
   const [mounted, setMounted] = useState(false);
@@ -25,6 +27,9 @@ export default function SalesHistoryPage() {
   const [sortColumn, setSortColumn] = useState<'date' | 'totalAmount' | 'customerName'>('date');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [currentPage, setCurrentPage] = useState(1);
+  const [userRole, setUserRole] = useState<string | null>(null);
+  const [showDeleteConfirmDialog, setShowDeleteConfirmDialog] = useState(false);
+  const [saleToDelete, setSaleToDelete] = useState<Sale | null>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -32,6 +37,8 @@ export default function SalesHistoryPage() {
 
   useEffect(() => {
     if (mounted) {
+      const role = localStorage.getItem('userRole');
+      setUserRole(role);
       const storedSales = localStorage.getItem('mockSales');
       const liveSales = storedSales ? JSON.parse(storedSales) : mockSales;
       setAllSales(liveSales);
@@ -80,6 +87,48 @@ export default function SalesHistoryPage() {
       setSortDirection('desc');
     }
     setCurrentPage(1); 
+  };
+
+  const handleDeleteSale = (sale: Sale) => {
+    setSaleToDelete(sale);
+    setShowDeleteConfirmDialog(true);
+  };
+
+  const confirmDeleteSale = () => {
+    if (!saleToDelete) return;
+
+    // Revert stock
+    let currentUniformsData: Uniform[] = JSON.parse(localStorage.getItem('updatedUniformsData') || JSON.stringify(initialUniforms));
+    saleToDelete.items.forEach(soldItem => {
+      currentUniformsData = currentUniformsData.map(uni => {
+        if (uni.id === soldItem.uniformId) {
+          return {
+            ...uni,
+            sizes: uni.sizes.map(s => {
+              if (s.size === soldItem.size) {
+                return { ...s, stock: s.stock + soldItem.quantity };
+              }
+              return s;
+            })
+          };
+        }
+        return uni;
+      });
+    });
+    localStorage.setItem('updatedUniformsData', JSON.stringify(currentUniformsData));
+
+    // Remove sale
+    const updatedSales = allSales.filter(s => s.id !== saleToDelete.id);
+    setAllSales(updatedSales);
+    localStorage.setItem('mockSales', JSON.stringify(updatedSales));
+
+    toast({
+      title: "Venta Eliminada",
+      description: `La venta ${formatDisplayId(saleToDelete.id, saleToDelete.date)} ha sido eliminada y el stock revertido.`,
+    });
+
+    setShowDeleteConfirmDialog(false);
+    setSaleToDelete(null);
   };
   
   if (!mounted || loading) {
@@ -183,12 +232,22 @@ export default function SalesHistoryPage() {
                         <TableCell className="text-right">COP {sale.totalAmount.toLocaleString('es-CO')}</TableCell>
                         <TableCell className="capitalize">{sale.generatedBy}</TableCell>
                         <TableCell className="capitalize">{sale.paymentMethod === 'transferencia' ? 'Transferencia' : 'Efectivo'}</TableCell>
-                        <TableCell className="text-center">
+                        <TableCell className="text-center space-x-1">
                           <Button asChild variant="outline" size="sm" className="shadow-sm hover:shadow">
                             <Link href={`/sales/receipt/${sale.id}`}>
                               <Eye className="mr-1.5 h-3.5 w-3.5" /> Ver
                             </Link>
                           </Button>
+                          {userRole === 'admin' && (
+                            <Button 
+                              variant="destructive" 
+                              size="sm" 
+                              onClick={() => handleDeleteSale(sale)}
+                              className="shadow-sm hover:shadow"
+                            >
+                              <Trash2 className="mr-1.5 h-3.5 w-3.5" /> Eliminar
+                            </Button>
+                          )}
                         </TableCell>
                       </TableRow>
                     ))}
@@ -228,6 +287,25 @@ export default function SalesHistoryPage() {
           )}
         </CardContent>
       </Card>
+
+      <AlertDialog open={showDeleteConfirmDialog} onOpenChange={setShowDeleteConfirmDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Estás seguro de eliminar esta venta?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción eliminará permanentemente la venta <span className="font-semibold">{saleToDelete ? formatDisplayId(saleToDelete.id, saleToDelete.date) : ''}</span>.
+              El stock de los artículos de esta venta será revertido. Esta acción no se puede deshacer.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setShowDeleteConfirmDialog(false)}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteSale} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Eliminar Venta
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
+
