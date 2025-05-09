@@ -26,11 +26,12 @@ const getGarmentIcon = (category: Uniform['category']): React.ReactElement => {
   return <IconComponent className="h-6 w-6 text-primary" />;
 };
 
+const ALL_CATEGORIES_VALUE = "--all--";
 
 export default function InventoryPage() {
   const [uniforms, setUniforms] = useState<Uniform[]>(initialUniforms); // Use initialUniforms directly
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<string>('');
+  const [selectedCategory, setSelectedCategory] = useState<string>(ALL_CATEGORIES_VALUE);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -61,7 +62,7 @@ export default function InventoryPage() {
   ).filter(item => {
     const searchTermMatch = item.uniformName.toLowerCase().includes(searchTerm.toLowerCase()) ||
                             item.size.toLowerCase().includes(searchTerm.toLowerCase());
-    const categoryMatch = selectedCategory ? item.category === selectedCategory : true;
+    const categoryMatch = selectedCategory === ALL_CATEGORIES_VALUE ? true : item.category === selectedCategory;
     return searchTermMatch && categoryMatch;
   });
 
@@ -113,7 +114,7 @@ export default function InventoryPage() {
                 <SelectValue placeholder="Filtrar por categoría" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todas las categorías</SelectItem>
+                <SelectItem value={ALL_CATEGORIES_VALUE}>Todas las categorías</SelectItem>
                 {availableCategories.map(category => (
                   <SelectItem key={category} value={category}>{category}</SelectItem>
                 ))}
@@ -169,3 +170,4 @@ export default function InventoryPage() {
     </div>
   );
 }
+
