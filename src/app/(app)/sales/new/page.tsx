@@ -135,7 +135,7 @@ export default function NewSalePage() {
 
 
     if (mounted) {
-      localStorage.setItem('currentSaleForReceipt', JSON.stringify(saleData));
+      // localStorage.setItem('currentSaleForReceipt', JSON.stringify(saleData)); // This line is removed
       const currentSales = JSON.parse(localStorage.getItem('mockSales') || JSON.stringify([])) as Sale[];
       localStorage.setItem('mockSales', JSON.stringify([...currentSales, saleData]));
 

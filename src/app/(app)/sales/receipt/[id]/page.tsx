@@ -10,6 +10,7 @@ import { AppLogo } from '@/components/AppLogo';
 import type { Sale } from '@/lib/mock-data'; 
 import { Printer, ArrowLeft, Paperclip } from 'lucide-react';
 import { siteConfig } from '@/config/site';
+import { formatDisplayId } from '@/lib/utils'; // Import the utility
 
 const ReceiptCardContent = ({ saleData, displayId }: { saleData: Sale, displayId: string }) => {
   if (!saleData) return null;
@@ -121,26 +122,18 @@ export default function ReceiptPage() {
 
   useEffect(() => {
     setMounted(true);
-    if (typeof window !== 'undefined') {
-      const storedSaleData = localStorage.getItem('currentSaleForReceipt');
-      if (storedSaleData) {
-        const parsedData: Sale = JSON.parse(storedSaleData);
-        if (parsedData.id === receiptId) {
-           setSaleData(parsedData);
-           const datePart = new Date(parsedData.date).toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\//g, '');
-           const sequencePart = parsedData.id.substring(parsedData.id.length - 4).toUpperCase();
-           setDisplayId(`${datePart}-${sequencePart}`);
-        } else {
-            console.warn("Receipt ID mismatch, redirecting or showing error might be better.");
-            // For demo, we allow viewing if a receipt is stored, regardless of ID match
-            setSaleData(parsedData); 
-            const datePart = new Date(parsedData.date).toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\//g, '');
-            const sequencePart = parsedData.id.substring(parsedData.id.length - 4).toUpperCase();
-            setDisplayId(`${datePart}-${sequencePart} (Alerta: ID no coincide)`);
-        }
+    if (mounted && receiptId) { // Ensure mounted and receiptId exist
+      const allSales = JSON.parse(localStorage.getItem('mockSales') || '[]') as Sale[];
+      const foundSale = allSales.find(s => s.id === receiptId);
+
+      if (foundSale) {
+        setSaleData(foundSale);
+        setDisplayId(formatDisplayId(foundSale.id, foundSale.date));
+      } else {
+        setSaleData(null); // Sale not found
       }
     }
-  }, [receiptId]);
+  }, [receiptId, mounted]);
   
   const handlePrint = () => {
     if (mounted) {

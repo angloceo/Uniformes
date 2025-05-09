@@ -56,7 +56,7 @@ const navItemsBase: NavItem[] = [
     icon: DollarSign,
     submenu: [
       { title: "Registrar Venta", href: "/sales/new", icon: ShoppingCart },
-      { title: "Historial de Ventas", href: "/sales/history", icon: ReceiptText, disabled: true }, 
+      { title: "Historial de Ventas", href: "/sales/history", icon: ReceiptText }, 
     ],
   },
   {
