@@ -1,3 +1,4 @@
+
 "use client";
 import type { ReactNode } from 'react';
 import { SidebarProvider, Sidebar, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
@@ -14,20 +15,24 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
   const [userRole, setUserRole] = useState<string | null>(null);
+  const [loggedInUsername, setLoggedInUsername] = useState<string | null>(null);
 
   useEffect(() => {
     setMounted(true);
     const role = localStorage.getItem('userRole');
+    const username = localStorage.getItem('loggedInUser');
     if (!role) {
       router.push('/login');
     } else {
       setUserRole(role);
+      setLoggedInUsername(username);
     }
   }, [router]);
 
   const handleLogout = () => {
     if (mounted) {
       localStorage.removeItem('userRole');
+      localStorage.removeItem('loggedInUser');
     }
     router.push('/login');
   };
@@ -52,7 +57,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
           <div className="flex items-center gap-3">
             <ThemeToggle />
             <span className="text-sm text-muted-foreground capitalize hidden sm:inline-block">
-              {userRole || "Usuario"}
+              {loggedInUsername || userRole || "Usuario"}
             </span>
             <Button variant="ghost" size="icon" onClick={handleLogout} aria-label="Cerrar sesión" className="h-8 w-8">
               <LogOut className="h-5 w-5" />

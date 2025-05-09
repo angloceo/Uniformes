@@ -22,10 +22,10 @@ import {
   ReceiptText,
   LogOut,
   Cog,
-  ShieldCheck, // For general admin/settings
-  TrendingUp, // For profit management
-  Settings2, // More specific for settings
-  History, // For history
+  ShieldCheck, 
+  TrendingUp, 
+  Settings2, 
+  History, 
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { AppLogo } from "./AppLogo";
@@ -53,7 +53,7 @@ const navItemsBase: NavItem[] = [
   },
   {
     title: "Ventas",
-    href: "/sales", // Parent path for active state
+    href: "/sales", 
     icon: DollarSign,
     submenu: [
       { title: "Registrar Venta", href: "/sales/new", icon: ShoppingCart },
@@ -62,7 +62,7 @@ const navItemsBase: NavItem[] = [
   },
   {
     title: "Inventario",
-    href: "/inventory", // Parent path for active state
+    href: "/inventory", 
     icon: Boxes,
     submenu: [
       { title: "Ver Stock", href: "/inventory", icon: Archive },
@@ -70,7 +70,7 @@ const navItemsBase: NavItem[] = [
       { title: "Historial de Ingresos", href: "/inventory/history", icon: History },
     ],
   },
-  {
+   {
     title: "Reportes",
     href: "/reports",
     icon: LineChart,
@@ -78,7 +78,7 @@ const navItemsBase: NavItem[] = [
   },
   {
     title: "Administración",
-    href: "/admin", // Parent path for active state
+    href: "/admin", 
     icon: ShieldCheck, 
     adminOnly: true,
     submenu: [
@@ -93,18 +93,21 @@ export function SidebarNav() {
   const pathname = usePathname();
   const router = useRouter();
   const [userRole, setUserRole] = useState<string | null>(null);
+  const [loggedInUsername, setLoggedInUsername] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
     if (typeof window !== 'undefined') {
       setUserRole(localStorage.getItem('userRole'));
+      setLoggedInUsername(localStorage.getItem('loggedInUser'));
     }
   }, []);
 
   const handleLogout = () => {
     if (mounted) {
       localStorage.removeItem('userRole');
+      localStorage.removeItem('loggedInUser');
     }
     router.push('/login');
   };
@@ -115,7 +118,6 @@ export function SidebarNav() {
     }
     return true;
   }).map(item => {
-    // Filter submenu items if the main item itself is not filtered out
     if (item.submenu) {
       const filteredSubmenu = item.submenu.filter(subItem => {
         if (subItem.adminOnly) {
@@ -123,17 +125,13 @@ export function SidebarNav() {
         }
         return true;
       });
-      // If all sub-items are filtered out and the main item was only a container for adminOnly subitems,
-      // consider removing the main item or disabling it.
-      // For now, we just return the item with potentially empty submenu.
-      // If an admin item has no subitems left, it might not make sense to show it.
       if (item.adminOnly && filteredSubmenu.length === 0) {
-        return null; // or return { ...item, submenu: [], disabled: true };
+        return null; 
       }
       return { ...item, submenu: filteredSubmenu };
     }
     return item;
-  }).filter(item => item !== null) as NavItem[]; // Type assertion after filtering nulls
+  }).filter(item => item !== null) as NavItem[]; 
 
   if (!mounted) {
      return null; 
@@ -144,14 +142,13 @@ export function SidebarNav() {
       <div className="flex h-full min-h-0 flex-col">
         <div className="flex h-16 items-center justify-start border-b border-sidebar-border px-4 shrink-0">
            <Link href="/dashboard" className="flex items-center gap-2">
-             {/* Use default AppLogo for application branding */}
              <AppLogo iconClassName="h-7 w-7" textClassName="text-xl" />
            </Link>
         </div>
         <div className="flex-1 overflow-y-auto overflow-x-hidden p-2 space-y-1">
         <SidebarMenu>
           {filteredNavItems.map((item) =>
-            item.submenu && item.submenu.length > 0 ? ( // Check if submenu has items
+            item.submenu && item.submenu.length > 0 ? ( 
               <SidebarMenuItem key={item.title} className="relative">
                 <SidebarMenuButton
                   isActive={pathname.startsWith(item.href)}
@@ -182,7 +179,7 @@ export function SidebarNav() {
                   ))}
                 </SidebarMenuSub>
               </SidebarMenuItem>
-            ) : !item.submenu ? ( // Render if not a submenu container or an empty one that should still show
+            ) : !item.submenu ? ( 
               <SidebarMenuItem key={item.title}>
                 <Link href={item.href} passHref legacyBehavior>
                   <SidebarMenuButton
@@ -196,15 +193,16 @@ export function SidebarNav() {
                   </SidebarMenuButton>
                 </Link>
               </SidebarMenuItem>
-            ) : null // Don't render admin menu if it has no sub-items left
+            ) : null 
           )}
         </SidebarMenu>
         </div>
         <Separator className="my-2 bg-sidebar-border" />
         <div className="p-2 mt-auto shrink-0">
-           {userRole && (
+           {(userRole || loggedInUsername) && (
             <div className="px-2 py-1 mb-2 text-xs text-sidebar-foreground/70">
-              Rol: <span className="font-semibold capitalize">{userRole}</span>
+              {loggedInUsername && <div>Usuario: <span className="font-semibold capitalize">{loggedInUsername}</span></div>}
+              {userRole && <div>Rol: <span className="font-semibold capitalize">{userRole}</span></div>}
             </div>
           )}
           <Button variant="ghost" className="w-full justify-start gap-2 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground" onClick={handleLogout}>
