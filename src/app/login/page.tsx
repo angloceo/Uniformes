@@ -40,7 +40,7 @@ export default function LoginPage() {
         <CardHeader className="text-center">
           <div className="mx-auto mb-6 w-fit">
             <AppLogo 
-              showColegioLogo={true} 
+              showColegioLogoText={true} 
               iconClassName="h-16 w-16" 
               textClassName="text-2xl"
               subTextClassName="text-sm"

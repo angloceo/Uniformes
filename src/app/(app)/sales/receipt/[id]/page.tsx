@@ -18,7 +18,7 @@ const ReceiptCardContent = ({ saleData, displayId }: { saleData: Sale, displayId
       <CardHeader className="border-b pb-4 print:pb-2 print:pt-3">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 print:gap-2">
           <AppLogo 
-            showColegioLogo={true} 
+            showColegioLogoText={true} 
             iconClassName="h-10 w-10 print:h-8 print:w-8" 
             textClassName="text-lg print:text-base"
             subTextClassName="text-xs print:text-[0.6rem]"
