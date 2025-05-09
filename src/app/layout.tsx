@@ -20,7 +20,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="es" translate="no" suppressHydrationWarning>
       <body className={`${GeistSans.variable} font-sans antialiased`}>
         <ThemeProvider
           attribute="class"
@@ -35,3 +35,4 @@ export default function RootLayout({
     </html>
   );
 }
+

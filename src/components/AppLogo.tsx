@@ -44,15 +44,18 @@ export function AppLogo({
         aria-hidden="true" 
       />
       <div className="flex flex-col">
-        <span className={cn(
+        <span 
+          className={cn(
           "font-semibold", 
           showColegioLogoText ? "text-primary" : "text-foreground", 
           textClassName || "text-lg"
-        )}>
+        )}
+          translate="no"
+        >
           {mainText}
         </span>
         {subTextContent && (
-          <span className={cn("text-muted-foreground", subTextClassName || "text-xs")}>
+          <span className={cn("text-muted-foreground", subTextClassName || "text-xs")} translate="no">
             {subTextContent}
           </span>
         )}
@@ -60,3 +63,4 @@ export function AppLogo({
     </div>
   );
 }
+
