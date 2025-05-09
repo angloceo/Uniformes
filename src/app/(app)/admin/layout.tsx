@@ -4,6 +4,7 @@
 import { useRouter } from 'next/navigation';
 import { useEffect, useState, type ReactNode } from 'react';
 import { Skeleton } from '@/components/ui/skeleton'; // For loading state
+import { Button } from '@/components/ui/button'; // Import Button component
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
@@ -54,3 +55,4 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
 
   return <>{children}</>;
 }
+
