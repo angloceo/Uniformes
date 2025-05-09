@@ -11,24 +11,30 @@ import { useState, useEffect, type FormEvent } from 'react';
 import { siteConfig } from '@/config/site';
 import { useToast } from '@/hooks/use-toast';
 
+// IMPORTANT: This is a MOCK HASH for demonstration purposes ONLY.
+// In a real application, use a strong, secure, server-side hashing algorithm.
+const MOCK_HASH_PREFIX = "mock_hashed::";
+const createMockHash = (password: string): string => `${MOCK_HASH_PREFIX}${password}`;
+const verifyMockHash = (password: string, hashedPassword: string): boolean => createMockHash(password) === hashedPassword;
+
 interface AppUser {
   id: string;
   username: string;
-  password_plaintext: string;
+  hashed_password: string; // Changed from password_plaintext
   role: 'admin' | 'secretary';
 }
 
 const defaultAdminUser: AppUser = {
   id: `user-${Date.now()}-admin`,
   username: 'admin',
-  password_plaintext: 'admin123',
+  hashed_password: createMockHash('admin123'), // Store hashed password
   role: 'admin'
 };
 
 const defaultSecretaryUser: AppUser = {
   id: `user-${Date.now()}-secretary`,
   username: 'secretary',
-  password_plaintext: 'secretary123',
+  hashed_password: createMockHash('secretary123'), // Store hashed password
   role: 'secretary'
 };
 
@@ -46,11 +52,12 @@ export default function LoginPage() {
       const storedUsersRaw = localStorage.getItem('appUsersData');
       if (storedUsersRaw) {
         try {
-          const parsedUsers = JSON.parse(storedUsersRaw);
-          if (Array.isArray(parsedUsers) && parsedUsers.length > 0) {
+          const parsedUsers = JSON.parse(storedUsersRaw) as AppUser[];
+          // Basic validation for stored user structure
+          if (Array.isArray(parsedUsers) && parsedUsers.length > 0 && parsedUsers.every(u => u.username && u.hashed_password && u.role)) {
             setAppUsers(parsedUsers);
           } else {
-            // Initialize with defaults if empty or invalid
+            // Initialize with defaults if empty or invalid structure
             const defaultUsers = [defaultAdminUser, defaultSecretaryUser];
             localStorage.setItem('appUsersData', JSON.stringify(defaultUsers));
             setAppUsers(defaultUsers);
@@ -75,12 +82,13 @@ export default function LoginPage() {
     if (!mounted) return;
 
     const user = appUsers.find(
-      (u) => u.username === username && u.password_plaintext === password
+      (u) => u.username === username && verifyMockHash(password, u.hashed_password)
     );
 
     if (user) {
       localStorage.setItem('userRole', user.role);
-      localStorage.setItem('loggedInUser', user.username); // Store username for display
+      localStorage.setItem('loggedInUser', user.username); 
+      localStorage.setItem('loggedInUserId', user.id); // Store user ID
       toast({
         title: "Inicio de Sesión Exitoso",
         description: `Bienvenido ${user.username}. Redirigiendo...`,

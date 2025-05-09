@@ -9,31 +9,39 @@ import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { initialUniforms, type Uniform } from '@/lib/mock-data';
-import { Settings2, Save, AlertCircle, Edit3, ImageIcon, Users2, UserPlus } from 'lucide-react';
+import { Settings2, Save, AlertCircle, Edit3, ImageIcon, Users2, UserPlus, Trash2 } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
 import { siteConfig } from '@/config/site';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger, DialogClose } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+
+
+// IMPORTANT: This is a MOCK HASH for demonstration purposes ONLY.
+// In a real application, use a strong, secure, server-side hashing algorithm.
+const MOCK_HASH_PREFIX = "mock_hashed::";
+const createMockHash = (password: string): string => `${MOCK_HASH_PREFIX}${password}`;
+// Verification is done on the login page.
 
 interface AppUser {
   id: string;
   username: string;
-  password_plaintext: string; // Stored as plaintext for mock purposes ONLY. NEVER do this in production.
+  hashed_password: string; // Changed from password_plaintext
   role: 'admin' | 'secretary';
 }
 
 const defaultAdminUser: AppUser = {
-  id: `user-${Date.now()}-admin`,
+  id: `user-default-admin`, // More stable ID for default
   username: 'admin',
-  password_plaintext: 'admin123',
+  hashed_password: createMockHash('admin123'),
   role: 'admin'
 };
 
 const defaultSecretaryUser: AppUser = {
-  id: `user-${Date.now()}-secretary`,
+  id: `user-default-secretary`, // More stable ID for default
   username: 'secretary',
-  password_plaintext: 'secretary123',
+  hashed_password: createMockHash('secretary123'),
   role: 'secretary'
 };
 
@@ -52,7 +60,13 @@ export default function AdminSettingsPage() {
   const [isAddUserDialogOpen, setIsAddUserDialogOpen] = useState(false);
   const [isEditUserDialogOpen, setIsEditUserDialogOpen] = useState(false);
   const [addUserFormState, setAddUserFormState] = useState({ username: '', password_plaintext: '', role: 'secretary' as 'admin' | 'secretary' });
-  const [editUserFormState, setEditUserFormState] = useState<AppUser & { originalUsername: string }>({ id: '', username: '', password_plaintext: '', role: 'secretary', originalUsername: '' });
+  const [editUserFormState, setEditUserFormState] = useState<AppUser & { originalUsername: string, new_password_plaintext?: string }>({ id: '', username: '', hashed_password: '', role: 'secretary', originalUsername: '', new_password_plaintext: '' });
+  
+  const [currentUserRole, setCurrentUserRole] = useState<'admin' | 'secretary' | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+
+  const [showDeleteUserDialog, setShowDeleteUserDialog] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<AppUser | null>(null);
 
 
   useEffect(() => {
@@ -61,25 +75,22 @@ export default function AdminSettingsPage() {
 
   useEffect(() => {
     if (mounted) {
+      const role = localStorage.getItem('userRole') as 'admin' | 'secretary' | null;
+      const userId = localStorage.getItem('loggedInUserId');
+      setCurrentUserRole(role);
+      setCurrentUserId(userId);
+
       // Load Uniforms
       const storedUniformsRaw = localStorage.getItem('updatedUniformsData');
       let liveUniformsData: Uniform[];
       if (storedUniformsRaw) {
         try {
-          const parsedData = JSON.parse(storedUniformsRaw);
-          if (Array.isArray(parsedData) && parsedData.every(item => typeof item.id === 'string' && typeof item.name === 'string' && typeof item.category === 'string' && Array.isArray(item.sizes))) {
-            liveUniformsData = parsedData;
-          } else {
-            liveUniformsData = JSON.parse(JSON.stringify(initialUniforms));
-            localStorage.setItem('updatedUniformsData', JSON.stringify(liveUniformsData));
-          }
+          liveUniformsData = JSON.parse(storedUniformsRaw);
         } catch (error) {
           liveUniformsData = JSON.parse(JSON.stringify(initialUniforms));
-          localStorage.setItem('updatedUniformsData', JSON.stringify(liveUniformsData));
         }
       } else {
         liveUniformsData = JSON.parse(JSON.stringify(initialUniforms));
-        localStorage.setItem('updatedUniformsData', JSON.stringify(liveUniformsData));
       }
       setUniformTypes(liveUniformsData);
       setEditedUniformTypes(JSON.parse(JSON.stringify(liveUniformsData)));
@@ -89,8 +100,10 @@ export default function AdminSettingsPage() {
       let liveUsersData: AppUser[];
       if (storedUsersRaw) {
         try {
-          liveUsersData = JSON.parse(storedUsersRaw);
-          if (!Array.isArray(liveUsersData) || liveUsersData.length === 0) {
+          const parsedUsers = JSON.parse(storedUsersRaw) as AppUser[];
+           if (Array.isArray(parsedUsers) && parsedUsers.length > 0 && parsedUsers.every(u => u.username && u.hashed_password && u.role)) {
+            liveUsersData = parsedUsers;
+          } else {
             liveUsersData = [defaultAdminUser, defaultSecretaryUser];
             localStorage.setItem('appUsersData', JSON.stringify(liveUsersData));
           }
@@ -120,11 +133,7 @@ export default function AdminSettingsPage() {
 
   const handleSaveUniformChanges = () => {
     if (!editedUniformTypes.every(uni => uni.name.trim() !== "" && uni.category.trim() !== "")) {
-      toast({
-        title: "Error de Validación",
-        description: "El nombre y la categoría de la prenda no pueden estar vacíos.",
-        variant: "destructive",
-      });
+      toast({ title: "Error de Validación", description: "El nombre y la categoría de la prenda no pueden estar vacíos.", variant: "destructive" });
       return;
     }
     localStorage.setItem('updatedUniformsData', JSON.stringify(editedUniformTypes));
@@ -135,24 +144,26 @@ export default function AdminSettingsPage() {
 
   // User Management Handlers
   const handleOpenAddUserDialog = () => {
+    if (currentUserRole !== 'admin') return;
     setAddUserFormState({ username: '', password_plaintext: '', role: 'secretary' });
     setIsAddUserDialogOpen(true);
   };
 
   const handleAddNewUser = (e: FormEvent) => {
     e.preventDefault();
+    if (currentUserRole !== 'admin') return;
     if (!addUserFormState.username.trim() || !addUserFormState.password_plaintext.trim()) {
       toast({ title: "Error", description: "Nombre de usuario y contraseña son requeridos.", variant: "destructive" });
       return;
     }
-    if (editedAppUsers.some(user => user.username === addUserFormState.username.trim())) {
+    if (editedAppUsers.some(user => user.username.toLowerCase() === addUserFormState.username.trim().toLowerCase())) {
       toast({ title: "Error", description: "El nombre de usuario ya existe.", variant: "destructive" });
       return;
     }
     const newUser: AppUser = {
       id: `user-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
       username: addUserFormState.username.trim(),
-      password_plaintext: addUserFormState.password_plaintext, // In real app, hash this server-side
+      hashed_password: createMockHash(addUserFormState.password_plaintext),
       role: addUserFormState.role,
     };
     setEditedAppUsers(prev => [...prev, newUser]);
@@ -162,19 +173,30 @@ export default function AdminSettingsPage() {
   };
   
   const handleOpenEditUserDialog = (userToEdit: AppUser) => {
-    setEditUserFormState({ ...userToEdit, password_plaintext: '', originalUsername: userToEdit.username }); // Clear password field for editing
-    setIsEditUserDialogOpen(true);
+    if (currentUserRole === 'admin' || (currentUserRole === 'secretary' && userToEdit.id === currentUserId)) {
+        setEditUserFormState({ ...userToEdit, originalUsername: userToEdit.username, new_password_plaintext: '' });
+        setIsEditUserDialogOpen(true);
+    } else {
+        toast({title: "Acceso Denegado", description: "No tienes permiso para editar este usuario.", variant: "destructive"})
+    }
   };
 
   const handleUpdateEditedUser = (e: FormEvent) => {
     e.preventDefault();
-    const { id, username, password_plaintext, role, originalUsername } = editUserFormState;
+    const { id, username, new_password_plaintext, role, originalUsername } = editUserFormState;
+
     if (!username.trim()) {
       toast({ title: "Error", description: "El nombre de usuario es requerido.", variant: "destructive" });
       return;
     }
-    // Check for username uniqueness if it has changed
-    if (username.trim() !== originalUsername && editedAppUsers.some(user => user.id !== id && user.username === username.trim())) {
+    
+    // Admin can edit anyone. Secretary can only edit their own.
+    if (currentUserRole !== 'admin' && id !== currentUserId) {
+        toast({ title: "Error de Permiso", description: "No puedes editar este usuario.", variant: "destructive"});
+        return;
+    }
+
+    if (username.trim().toLowerCase() !== originalUsername.toLowerCase() && editedAppUsers.some(user => user.id !== id && user.username.toLowerCase() === username.trim().toLowerCase())) {
       toast({ title: "Error", description: "El nombre de usuario ya existe.", variant: "destructive" });
       return;
     }
@@ -182,13 +204,15 @@ export default function AdminSettingsPage() {
     setEditedAppUsers(prevUsers =>
       prevUsers.map(user => {
         if (user.id === id) {
-          return {
-            ...user,
-            username: username.trim(),
-            // Update password only if a new one is provided
-            password_plaintext: password_plaintext.trim() ? password_plaintext.trim() : user.password_plaintext,
-            role,
-          };
+          const updatedUser = { ...user, username: username.trim() };
+          if (new_password_plaintext && new_password_plaintext.trim()) {
+            updatedUser.hashed_password = createMockHash(new_password_plaintext.trim());
+          }
+          // Admin can change role, secretary cannot
+          if (currentUserRole === 'admin') {
+            updatedUser.role = role;
+          }
+          return updatedUser;
         }
         return user;
       })
@@ -199,12 +223,44 @@ export default function AdminSettingsPage() {
   };
 
   const handleSaveUserChanges = () => {
-    // Further validation can be added here if needed
     localStorage.setItem('appUsersData', JSON.stringify(editedAppUsers));
     setAppUsers(JSON.parse(JSON.stringify(editedAppUsers)));
     toast({ title: "Cambios Guardados", description: "La información de los usuarios ha sido actualizada."});
     setHasUserChanges(false);
   };
+
+  const handleDeleteUser = (user: AppUser) => {
+    if (currentUserRole !== 'admin') {
+        toast({ title: "Permiso Denegado", description: "Solo los administradores pueden eliminar usuarios.", variant: "destructive"});
+        return;
+    }
+    if (user.id === currentUserId) {
+        toast({ title: "Acción no permitida", description: "No puedes eliminar tu propia cuenta de administrador.", variant: "destructive"});
+        return;
+    }
+    setUserToDelete(user);
+    setShowDeleteUserDialog(true);
+  };
+
+  const confirmDeleteUser = () => {
+    if (!userToDelete || currentUserRole !== 'admin') return;
+
+    setEditedAppUsers(prev => prev.filter(u => u.id !== userToDelete.id));
+    setHasUserChanges(true);
+    setShowDeleteUserDialog(false);
+    toast({ title: "Usuario Eliminado", description: `El usuario ${userToDelete.username} ha sido marcado para eliminación. Guarda los cambios para confirmar.` });
+    setUserToDelete(null);
+  };
+
+  const displayedUsers = useMemo(() => {
+    if (currentUserRole === 'admin') {
+      return editedAppUsers;
+    }
+    if (currentUserRole === 'secretary') {
+      return editedAppUsers.filter(user => user.id === currentUserId);
+    }
+    return [];
+  }, [editedAppUsers, currentUserRole, currentUserId]);
 
 
   if (!mounted || loading) {
@@ -237,7 +293,7 @@ export default function AdminSettingsPage() {
           <CardContent className="pt-6">
             <div className="flex items-center">
               <AlertCircle className="h-5 w-5 text-primary mr-2" />
-              <p className="text-sm text-primary-dark font-medium">
+              <p className="text-sm text-primary font-medium"> {/* Corrected: text-primary instead of text-primary-dark which is not defined */}
                 Tienes cambios sin guardar. Haz clic en el botón "Guardar Cambios" correspondiente.
               </p>
             </div>
@@ -282,28 +338,30 @@ export default function AdminSettingsPage() {
         <CardHeader className="flex flex-row justify-between items-center">
           <div>
             <CardTitle className="text-xl flex items-center"><Users2 className="mr-2 h-5 w-5 text-primary" />Gestionar Usuarios</CardTitle>
-            <CardDescription>Administra los usuarios con acceso al sistema. <span className="font-semibold text-destructive">Nota: Las contraseñas se guardan en texto plano (solo para demostración).</span></CardDescription>
+            <CardDescription>Administra los usuarios con acceso al sistema. <span className="font-semibold text-destructive">Nota: Las contraseñas se guardan simulando un hash (solo para demostración).</span></CardDescription>
           </div>
-          <Dialog open={isAddUserDialogOpen} onOpenChange={setIsAddUserDialogOpen}>
-            <DialogTrigger asChild>
-              <Button onClick={handleOpenAddUserDialog} className="shadow hover:shadow-md"><UserPlus className="mr-2 h-4 w-4" />Agregar Usuario</Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader><DialogTitle>Agregar Nuevo Usuario</DialogTitle></DialogHeader>
-              <form onSubmit={handleAddNewUser} className="space-y-4">
-                <div><Label htmlFor="newUsername">Nombre de Usuario</Label><Input id="newUsername" value={addUserFormState.username} onChange={(e) => setAddUserFormState(s => ({ ...s, username: e.target.value }))} required /></div>
-                <div><Label htmlFor="newPassword">Contraseña</Label><Input id="newPassword" type="password" value={addUserFormState.password_plaintext} onChange={(e) => setAddUserFormState(s => ({ ...s, password_plaintext: e.target.value }))} required /></div>
-                <div>
-                  <Label htmlFor="newRole">Rol</Label>
-                  <Select value={addUserFormState.role} onValueChange={(value: 'admin' | 'secretary') => setAddUserFormState(s => ({ ...s, role: value }))}>
-                    <SelectTrigger id="newRole"><SelectValue /></SelectTrigger>
-                    <SelectContent><SelectItem value="admin">Administrador</SelectItem><SelectItem value="secretary">Secretaria</SelectItem></SelectContent>
-                  </Select>
-                </div>
-                <DialogFooter><DialogClose asChild><Button type="button" variant="outline">Cancelar</Button></DialogClose><Button type="submit">Agregar Usuario</Button></DialogFooter>
-              </form>
-            </DialogContent>
-          </Dialog>
+          {currentUserRole === 'admin' && (
+            <Dialog open={isAddUserDialogOpen} onOpenChange={setIsAddUserDialogOpen}>
+              <DialogTrigger asChild>
+                <Button onClick={handleOpenAddUserDialog} className="shadow hover:shadow-md"><UserPlus className="mr-2 h-4 w-4" />Agregar Usuario</Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader><DialogTitle>Agregar Nuevo Usuario</DialogTitle></DialogHeader>
+                <form onSubmit={handleAddNewUser} className="space-y-4">
+                  <div><Label htmlFor="newUsername">Nombre de Usuario</Label><Input id="newUsername" value={addUserFormState.username} onChange={(e) => setAddUserFormState(s => ({ ...s, username: e.target.value }))} required /></div>
+                  <div><Label htmlFor="newPassword">Contraseña</Label><Input id="newPassword" type="password" value={addUserFormState.password_plaintext} onChange={(e) => setAddUserFormState(s => ({ ...s, password_plaintext: e.target.value }))} required /></div>
+                  <div>
+                    <Label htmlFor="newRole">Rol</Label>
+                    <Select value={addUserFormState.role} onValueChange={(value: 'admin' | 'secretary') => setAddUserFormState(s => ({ ...s, role: value }))}>
+                      <SelectTrigger id="newRole"><SelectValue /></SelectTrigger>
+                      <SelectContent><SelectItem value="admin">Administrador</SelectItem><SelectItem value="secretary">Secretaria</SelectItem></SelectContent>
+                    </Select>
+                  </div>
+                  <DialogFooter><DialogClose asChild><Button type="button" variant="outline">Cancelar</Button></DialogClose><Button type="submit">Agregar Usuario</Button></DialogFooter>
+                </form>
+              </DialogContent>
+            </Dialog>
+          )}
         </CardHeader>
         <CardContent>
           <ScrollArea className="h-[300px] pr-3">
@@ -312,12 +370,17 @@ export default function AdminSettingsPage() {
                 <TableRow><TableHead>Nombre de Usuario</TableHead><TableHead>Rol</TableHead><TableHead className="text-right">Acciones</TableHead></TableRow>
               </TableHeader>
               <TableBody>
-                {editedAppUsers.map((user) => (
+                {displayedUsers.map((user) => (
                   <TableRow key={user.id}>
                     <TableCell className="font-medium">{user.username}</TableCell>
                     <TableCell className="capitalize">{user.role}</TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="text-right space-x-1">
                       <Button variant="outline" size="sm" onClick={() => handleOpenEditUserDialog(user)} className="shadow-sm hover:shadow"><Edit3 className="mr-1.5 h-3.5 w-3.5" />Editar</Button>
+                      {currentUserRole === 'admin' && user.id !== currentUserId && ( // Admin can delete others, not self
+                        <Button variant="destructive" size="sm" onClick={() => handleDeleteUser(user)} className="shadow-sm hover:shadow">
+                            <Trash2 className="mr-1.5 h-3.5 w-3.5" />Eliminar
+                        </Button>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))}
@@ -335,18 +398,46 @@ export default function AdminSettingsPage() {
           <DialogHeader><DialogTitle>Editar Usuario: {editUserFormState.originalUsername}</DialogTitle><DialogDescription>Deje la contraseña en blanco para no cambiarla.</DialogDescription></DialogHeader>
           <form onSubmit={handleUpdateEditedUser} className="space-y-4">
             <div><Label htmlFor="editUsername">Nombre de Usuario</Label><Input id="editUsername" value={editUserFormState.username} onChange={(e) => setEditUserFormState(s => ({ ...s, username: e.target.value }))} required /></div>
-            <div><Label htmlFor="editPassword">Nueva Contraseña (opcional)</Label><Input id="editPassword" type="password" value={editUserFormState.password_plaintext} onChange={(e) => setEditUserFormState(s => ({ ...s, password_plaintext: e.target.value }))} placeholder="Dejar en blanco para no cambiar" /></div>
-            <div>
-              <Label htmlFor="editRole">Rol</Label>
-              <Select value={editUserFormState.role} onValueChange={(value: 'admin' | 'secretary') => setEditUserFormState(s => ({ ...s, role: value }))}>
-                <SelectTrigger id="editRole"><SelectValue /></SelectTrigger>
-                <SelectContent><SelectItem value="admin">Administrador</SelectItem><SelectItem value="secretary">Secretaria</SelectItem></SelectContent>
-              </Select>
-            </div>
+            <div><Label htmlFor="editPassword">Nueva Contraseña (opcional)</Label><Input id="editPassword" type="password" value={editUserFormState.new_password_plaintext} onChange={(e) => setEditUserFormState(s => ({ ...s, new_password_plaintext: e.target.value }))} placeholder="Dejar en blanco para no cambiar" /></div>
+            {currentUserRole === 'admin' && ( // Only admin can change role
+                <div>
+                <Label htmlFor="editRole">Rol</Label>
+                <Select 
+                    value={editUserFormState.role} 
+                    onValueChange={(value: 'admin' | 'secretary') => setEditUserFormState(s => ({ ...s, role: value }))}
+                    disabled={editUserFormState.id === currentUserId && editUserFormState.role === 'admin'} // Admin cannot change their own role from admin
+                >
+                    <SelectTrigger id="editRole"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="admin" disabled={editUserFormState.id === currentUserId && editUserFormState.role === 'admin'}>Administrador</SelectItem>
+                        <SelectItem value="secretary">Secretaria</SelectItem>
+                    </SelectContent>
+                </Select>
+                 {editUserFormState.id === currentUserId && editUserFormState.role === 'admin' && <p className="text-xs text-muted-foreground mt-1">Los administradores no pueden cambiar su propio rol.</p>}
+                </div>
+            )}
             <DialogFooter><DialogClose asChild><Button type="button" variant="outline">Cancelar</Button></DialogClose><Button type="submit">Actualizar Usuario</Button></DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={showDeleteUserDialog} onOpenChange={setShowDeleteUserDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Estás seguro de eliminar este usuario?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción eliminará permanentemente al usuario <span className="font-semibold">{userToDelete?.username}</span>.
+              Esta acción no se puede deshacer una vez guardados los cambios.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => {setShowDeleteUserDialog(false); setUserToDelete(null);}}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteUser} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Eliminar Usuario
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
 
       <Card className="shadow-lg">

@@ -16,12 +16,15 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   const [mounted, setMounted] = useState(false);
   const [userRole, setUserRole] = useState<string | null>(null);
   const [loggedInUsername, setLoggedInUsername] = useState<string | null>(null);
+  // No need to store loggedInUserId here, it's set on login and read where needed.
 
   useEffect(() => {
     setMounted(true);
     const role = localStorage.getItem('userRole');
     const username = localStorage.getItem('loggedInUser');
-    if (!role) {
+    const userId = localStorage.getItem('loggedInUserId'); // Check if userId exists
+
+    if (!role || !username || !userId) { // Ensure all necessary items are present
       router.push('/login');
     } else {
       setUserRole(role);
@@ -33,6 +36,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     if (mounted) {
       localStorage.removeItem('userRole');
       localStorage.removeItem('loggedInUser');
+      localStorage.removeItem('loggedInUserId'); // Clear userId on logout
     }
     router.push('/login');
   };
