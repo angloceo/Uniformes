@@ -16,28 +16,37 @@ import type { LucideIcon } from "lucide-react";
 const garmentIcons: Record<Uniform['category'], LucideIcon> = {
   'Camiseta Polo': Shirt,
   'Camiseta Deporte': Zap,
-  'Sudadera': Shirt, // Using Shirt as placeholder, consider custom SVG or different icon if available
+  'Sudadera': Shirt, 
   'Falda': Layers,
   'Chaqueta': Wind,
 };
 
 const getGarmentIcon = (category: Uniform['category']): React.ReactElement => {
-  const IconComponent = garmentIcons[category] || GripVertical; // Fallback icon
+  const IconComponent = garmentIcons[category] || GripVertical; 
   return <IconComponent className="h-6 w-6 text-primary" />;
 };
 
 const ALL_CATEGORIES_VALUE = "--all--";
 
 export default function InventoryPage() {
-  const [uniforms, setUniforms] = useState<Uniform[]>(initialUniforms); // Use initialUniforms directly
+  const [uniforms, setUniforms] = useState<Uniform[]>([]); 
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>(ALL_CATEGORIES_VALUE);
   const [loading, setLoading] = useState(true);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    // Data is now directly from initialUniforms, so no async loading needed for it
-    setLoading(false);
+    setMounted(true);
   }, []);
+
+  useEffect(() => {
+    if (mounted) {
+      const storedUniforms = localStorage.getItem('updatedUniformsData');
+      const liveUniforms = storedUniforms ? JSON.parse(storedUniforms) : initialUniforms;
+      setUniforms(liveUniforms);
+      setLoading(false);
+    }
+  }, [mounted]);
 
   const availableCategories = useMemo(() => {
     const categories = new Set(uniforms.map(u => u.category));
@@ -47,15 +56,15 @@ export default function InventoryPage() {
 
   const getStockStatus = (stock: number, lowStockThreshold: number): { label: string; variant: "default" | "secondary" | "destructive" | "outline" } => {
     if (stock === 0) return { label: "Agotado", variant: "destructive" };
-    if (stock <= lowStockThreshold) return { label: "Bajo Stock", variant: "destructive" }; // Kept destructive for low stock
+    if (stock <= lowStockThreshold) return { label: "Bajo Stock", variant: "destructive" };
     if (stock <= lowStockThreshold * 2) return { label: "Medio", variant: "outline" }; 
     return { label: "Suficiente", variant: "default" }; 
   };
 
   const filteredUniforms = uniforms.flatMap(uniform =>
     uniform.sizes.map(size => ({
-      ...uniform, // Spread uniform properties (id, name, category, imageUrl)
-      ...size,    // Spread size properties (size, price, cost, stock, lowStockThreshold)
+      ...uniform, 
+      ...size,    
       uniformName: uniform.name, 
       sizeSpecificId: `${uniform.id}-${size.size}`
     }))
@@ -66,7 +75,7 @@ export default function InventoryPage() {
     return searchTermMatch && categoryMatch;
   });
 
-  if (loading) {
+  if (!mounted || loading) {
     return (
       <div className="space-y-6">
         <CardHeader className="px-0">

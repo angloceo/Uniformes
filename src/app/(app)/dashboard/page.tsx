@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Archive, BarChart3, DollarSign, PackagePlus, ShoppingCart, Users, AlertTriangle, CheckCircle, Clock } from "lucide-react";
 import { useEffect, useState } from "react";
-import { initialUniforms as defaultUniforms, mockSales as defaultMockSales, type Uniform, type Sale } from "@/lib/mock-data";
+import { initialUniforms as defaultUniforms, mockSales as defaultMockSales, type Uniform, type Sale, setMockSales } from "@/lib/mock-data";
 
 // Function to safely parse JSON from localStorage
 const getFromLocalStorage = <T,>(key: string, defaultValue: T): T => {
@@ -19,6 +19,8 @@ const getFromLocalStorage = <T,>(key: string, defaultValue: T): T => {
       return JSON.parse(storedValue) as T;
     } catch (error) {
       console.error(`Error parsing localStorage item ${key}:`, error);
+      // if parsing fails, remove the problematic item
+      localStorage.removeItem(key);
       return defaultValue;
     }
   }
@@ -33,6 +35,19 @@ const getDashboardData = async () => {
   const currentUniforms = getFromLocalStorage<Uniform[]>('updatedUniformsData', defaultUniforms);
   const currentSales = getFromLocalStorage<Sale[]>('mockSales', defaultMockSales);
   
+  // Update the global mockSales if localStorage has a more recent version.
+  // This is a workaround for demo purposes. In a real app, state management (context/zustand) or server-side data fetching would handle this.
+  if (typeof window !== 'undefined') {
+    const storedSales = localStorage.getItem('mockSales');
+    if (storedSales) {
+        try {
+            setMockSales(JSON.parse(storedSales));
+        } catch (e) {
+            console.error("Failed to parse mockSales from localStorage on dashboard", e)
+        }
+    }
+  }
+  
   const today = new Date().toISOString().split('T')[0];
   const salesToday = currentSales.filter(sale => sale.date.startsWith(today));
   const totalSalesToday = salesToday.reduce((sum, sale) => sum + sale.totalAmount, 0);
@@ -41,13 +56,12 @@ const getDashboardData = async () => {
   let criticalInventoryCount = 0;
   currentUniforms.forEach(uniform => {
     uniform.sizes.forEach(size => {
-      if (size.stock > 0 && size.stock <= size.lowStockThreshold) { // Only count if stock > 0
+      if (size.stock > 0 && size.stock <= size.lowStockThreshold) {
         criticalInventoryCount++;
       }
     });
   });
 
-  // Generate recent activity from sales for more dynamic content
   const recentActivityFromSales = salesToday.slice(-2).map(sale => ({
     type: "Venta",
     description: `Venta #${sale.id.slice(-5)} registrada (${sale.customerName})`,
@@ -58,7 +72,7 @@ const getDashboardData = async () => {
   const sampleInventoryActivity = currentUniforms
     .flatMap(u => u.sizes.map(s => ({ ...s, name: u.name })))
     .filter(s => s.stock > 0 && s.stock <= s.lowStockThreshold)
-    .slice(0, 1) // Take one critical item for demo
+    .slice(0, 1) 
     .map(item => ({
       type: "Inventario",
       description: `Stock de '${item.name} - ${item.size}' bajo (${item.stock} unidades)`,
@@ -66,7 +80,6 @@ const getDashboardData = async () => {
       icon: AlertTriangle,
     }));
 
-  // Combine and sort recent activities (simplistic sort by presence)
   const combinedActivity = [...recentActivityFromSales, ...sampleInventoryActivity].slice(0,3);
 
 
@@ -107,6 +120,9 @@ export default function DashboardPage() {
         setLoading(false);
       };
       fetchData();
+      // Periodically refresh data if dashboard is open for long
+      const intervalId = setInterval(fetchData, 30000); // Refresh every 30 seconds
+      return () => clearInterval(intervalId);
     }
   }, [mounted]);
 
@@ -207,7 +223,7 @@ export default function DashboardPage() {
                   </div>
                 </li>
               ))}
-               {stats.recentActivity.length === 0 && ( // Should not happen due to fallback
+               {stats.recentActivity.length === 0 && ( 
                 <p className="text-sm text-muted-foreground">No hay actividad reciente.</p>
               )}
             </ul>

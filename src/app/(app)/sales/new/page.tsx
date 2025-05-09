@@ -33,14 +33,9 @@ export default function NewSalePage() {
 
   useEffect(() => {
     setMounted(true);
-    // In a real app, fetch this data. For demo, use mutable mock data.
-    // It's important that this reflects any changes made in profit-management
-    // For simplicity, we'll assume initialUniforms is the "live" data source
-    // or that profit-management updates a shared state/context if this were more complex.
-    // For this demo, we'll just use initialUniforms as potentially modified by admin page.
-    const liveUniforms = typeof window !== 'undefined' ? (JSON.parse(localStorage.getItem('updatedUniformsData') || JSON.stringify(initialUniforms))) : initialUniforms;
+    const storedUniforms = typeof window !== 'undefined' ? localStorage.getItem('updatedUniformsData') : null;
+    const liveUniforms = storedUniforms ? JSON.parse(storedUniforms) : initialUniforms;
     setUniformsData(liveUniforms);
-
   }, []);
 
   const selectedUniformForForm = uniformsData.find(u => u.id === currentUniformId);
@@ -63,18 +58,27 @@ export default function NewSalePage() {
       size: currentSize,
       quantity: Number(currentQuantity),
       unitPrice: selectedUniformSizeForForm.price,
-      unitCost: selectedUniformSizeForForm.cost, // Capture cost at time of sale
+      unitCost: selectedUniformSizeForForm.cost, 
       totalPrice: selectedUniformSizeForForm.price * Number(currentQuantity),
-      totalCost: selectedUniformSizeForForm.cost * Number(currentQuantity), // Capture total cost
+      totalCost: selectedUniformSizeForForm.cost * Number(currentQuantity), 
     };
 
     setSaleItems(prevItems => {
       const existingItemIndex = prevItems.findIndex(item => item.uniformId === newItem.uniformId && item.size === newItem.size);
       if (existingItemIndex > -1) {
         const updatedItems = [...prevItems];
-        updatedItems[existingItemIndex].quantity += newItem.quantity;
-        updatedItems[existingItemIndex].totalPrice += newItem.totalPrice;
-        updatedItems[existingItemIndex].totalCost += newItem.totalCost; // Update total cost
+        const combinedQuantity = updatedItems[existingItemIndex].quantity + newItem.quantity;
+        
+        // Check stock for combined quantity
+        const stockForItem = selectedUniformForForm.sizes.find(s => s.size === newItem.size)?.stock ?? 0;
+        if (combinedQuantity > stockForItem) {
+             toast({ title: "Stock Insuficiente", description: `No puedes agregar ${newItem.quantity} más. Ya tienes ${updatedItems[existingItemIndex].quantity} en el carrito y solo hay ${stockForItem} unidades de ${selectedUniformForForm.name} (Talla: ${newItem.size}).`, variant: "destructive"});
+             return prevItems; // Return previous items without change
+        }
+
+        updatedItems[existingItemIndex].quantity = combinedQuantity;
+        updatedItems[existingItemIndex].totalPrice = updatedItems[existingItemIndex].unitPrice * combinedQuantity;
+        updatedItems[existingItemIndex].totalCost = updatedItems[existingItemIndex].unitCost * combinedQuantity;
         return updatedItems;
       }
       return [...prevItems, newItem];
@@ -115,11 +119,6 @@ export default function NewSalePage() {
         toast({ title: "Método de Pago", description: "Selecciona un método de pago.", variant: "destructive"});
         return;
     }
-    // Comprobante is optional now as per user initial request.
-    // if (paymentMethod === 'transferencia' && !paymentProofFile) {
-    //     toast({ title: "Comprobante Requerido", description: "Sube el comprobante de pago para transferencia.", variant: "destructive"});
-    //     return;
-    // }
     
     const saleData: Sale = {
       id: `sale-${Date.now()}`,
@@ -134,21 +133,15 @@ export default function NewSalePage() {
       generatedBy: mounted ? localStorage.getItem('userRole') || 'unknown' : 'unknown'
     };
 
-    // In a real app, update inventory here
-    // e.g., by calling an API that then updates mockSales and initialUniforms (or a database)
-    // For demo, we can try to update the `initialUniforms` stored in localStorage or a shared state.
-    // This is simplified for the mock.
 
     if (mounted) {
       localStorage.setItem('currentSaleForReceipt', JSON.stringify(saleData));
-       // Add to mockSales (for dashboard, etc.) - This would be a backend operation
-      const currentSales = JSON.parse(localStorage.getItem('mockSales') || '[]') as Sale[];
+      const currentSales = JSON.parse(localStorage.getItem('mockSales') || JSON.stringify([])) as Sale[];
       localStorage.setItem('mockSales', JSON.stringify([...currentSales, saleData]));
 
-      // Update stock in uniformsData (localStorage for persistence across sessions in demo)
-      let updatedUniforms = [...uniformsData];
+      let currentUniformsData = JSON.parse(localStorage.getItem('updatedUniformsData') || JSON.stringify(initialUniforms)) as Uniform[];
       saleData.items.forEach(soldItem => {
-        updatedUniforms = updatedUniforms.map(uni => {
+        currentUniformsData = currentUniformsData.map(uni => {
           if (uni.id === soldItem.uniformId) {
             return {
               ...uni,
@@ -163,9 +156,8 @@ export default function NewSalePage() {
           return uni;
         });
       });
-      localStorage.setItem('updatedUniformsData', JSON.stringify(updatedUniforms));
-      setUniformsData(updatedUniforms); // Refresh local state if needed elsewhere on this page
-
+      localStorage.setItem('updatedUniformsData', JSON.stringify(currentUniformsData));
+      setUniformsData(currentUniformsData); 
     }
     router.push(`/sales/receipt/${saleData.id}`);
   };
@@ -316,7 +308,7 @@ export default function NewSalePage() {
           </div>
         </CardContent>
         <CardFooter className="flex justify-end">
-          <Button onClick={handleGenerateReceipt} size="lg" className="shadow-lg hover:shadow-xl" disabled={saleItems.length === 0 || !customerName.trim() || !paymentMethod /* || (paymentMethod === 'transferencia' && !paymentProofFile) - Comprobante es opcional */}>
+          <Button onClick={handleGenerateReceipt} size="lg" className="shadow-lg hover:shadow-xl" disabled={saleItems.length === 0 || !customerName.trim() || !paymentMethod }>
             <FileSignature className="mr-2 h-5 w-5" />
             Generar Recibo
           </Button>

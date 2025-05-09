@@ -16,47 +16,27 @@ export interface Uniform {
 
 export const initialUniforms: Uniform[] = [
   {
-    id: 'polo-h',
-    name: 'Camiseta Polo (Hombre)',
+    id: 'polo-unisex', // Changed ID
+    name: 'Camiseta Polo', // Changed name
     category: 'Camiseta Polo',
-    imageUrl: 'https://picsum.photos/seed/polohombre/200/200',
-    sizes: [
-      { size: '2', price: 36000, cost: 25000, stock: 18, lowStockThreshold: 5 },
-      { size: '4', price: 36000, cost: 25000, stock: 22, lowStockThreshold: 5 },
-      { size: '6', price: 36000, cost: 25000, stock: 15, lowStockThreshold: 5 },
-      { size: '8', price: 36000, cost: 25000, stock: 15, lowStockThreshold: 5 },
-      { size: '10', price: 36000, cost: 25000, stock: 15, lowStockThreshold: 5 },
-      { size: '12', price: 36000, cost: 25000, stock: 15, lowStockThreshold: 5 },
-      { size: '14', price: 36000, cost: 25000, stock: 15, lowStockThreshold: 5 },
-      { size: '16', price: 36000, cost: 25000, stock: 15, lowStockThreshold: 5 },
-      { size: 'S', price: 38000, cost: 26000, stock: 12, lowStockThreshold: 3 },
-      { size: 'M', price: 38000, cost: 26000, stock: 3, lowStockThreshold: 3 },
-      { size: 'L', price: 38000, cost: 26000, stock: 8, lowStockThreshold: 3 },
-      { size: 'XL', price: 38000, cost: 26000, stock: 7, lowStockThreshold: 2 },
-      { size: 'XXL', price: 38000, cost: 26000, stock: 0, lowStockThreshold: 2 },
+    imageUrl: 'https://picsum.photos/seed/polounisex/200/200', // Changed image seed
+    sizes: [ // Merged sizes from (Hombre) and (Mujer), taking higher stock for overlaps
+      { size: '2', price: 36000, cost: 25000, stock: 20, lowStockThreshold: 5 }, // Max stock was 20
+      { size: '4', price: 36000, cost: 25000, stock: 25, lowStockThreshold: 5 }, // Max stock was 25
+      { size: '6', price: 36000, cost: 25000, stock: 20, lowStockThreshold: 5 }, // Max stock was 20
+      { size: '8', price: 36000, cost: 25000, stock: 20, lowStockThreshold: 5 }, // Max stock was 20
+      { size: '10', price: 36000, cost: 25000, stock: 20, lowStockThreshold: 5 }, // Max stock was 20
+      { size: '12', price: 36000, cost: 25000, stock: 20, lowStockThreshold: 5 }, // Max stock was 20
+      { size: '14', price: 36000, cost: 25000, stock: 20, lowStockThreshold: 5 }, // Max stock was 20
+      { size: '16', price: 36000, cost: 25000, stock: 20, lowStockThreshold: 5 }, // Max stock was 20
+      { size: 'S', price: 38000, cost: 26000, stock: 18, lowStockThreshold: 3 }, // Max stock was 18
+      { size: 'M', price: 38000, cost: 26000, stock: 13, lowStockThreshold: 3 }, // Max stock was 13
+      { size: 'L', price: 38000, cost: 26000, stock: 9, lowStockThreshold: 3 },  // Max stock was 9
+      { size: 'XL', price: 38000, cost: 26000, stock: 9, lowStockThreshold: 3 }, // Max stock was 9
+      { size: 'XXL', price: 38000, cost: 26000, stock: 9, lowStockThreshold: 2 },// Max stock was 9 (from Mujer)
     ],
   },
-  {
-    id: 'polo-m',
-    name: 'Camiseta Polo (Mujer)',
-    category: 'Camiseta Polo',
-    imageUrl: 'https://picsum.photos/seed/polomujer/200/200',
-    sizes: [
-      { size: '2', price: 36000, cost: 25000, stock: 20, lowStockThreshold: 5 },
-      { size: '4', price: 36000, cost: 25000, stock: 25, lowStockThreshold: 5 },
-      { size: '6', price: 36000, cost: 25000, stock: 20, lowStockThreshold: 5 },
-      { size: '8', price: 36000, cost: 25000, stock: 20, lowStockThreshold: 5 },
-      { size: '10', price: 36000, cost: 25000, stock: 20, lowStockThreshold: 5 },
-      { size: '12', price: 36000, cost: 25000, stock: 20, lowStockThreshold: 5 },
-      { size: '14', price: 36000, cost: 25000, stock: 20, lowStockThreshold: 5 },
-      { size: '16', price: 36000, cost: 25000, stock: 20, lowStockThreshold: 5 },
-      { size: 'S', price: 38000, cost: 26000, stock: 18, lowStockThreshold: 3 },
-      { size: 'M', price: 38000, cost: 26000, stock: 13, lowStockThreshold: 3 },
-      { size: 'L', price: 38000, cost: 26000, stock: 9, lowStockThreshold: 3 },
-      { size: 'XL', price: 38000, cost: 26000, stock: 9, lowStockThreshold: 3 },
-      { size: 'XXL', price: 38000, cost: 26000, stock: 9, lowStockThreshold: 3 },
-    ],
-  },
+  // Camiseta Polo (Mujer) is removed as it's merged into Camiseta Polo (Unisex)
   {
     id: 'falda',
     name: 'Falda Escolar',
@@ -165,13 +145,13 @@ export interface Sale {
 }
 
 // Mock sales data
-export const mockSales: Sale[] = [
+export let mockSales: Sale[] = [ // Changed to let for potential updates
   {
     id: 'sale001',
-    date: new Date().toISOString(),
+    date: new Date(Date.now() - 86400000).toISOString(), // Yesterday
     customerName: 'Ana Pérez',
     items: [
-      { uniformId: 'polo-h', uniformName: 'Camiseta Polo (Hombre)', size: 'M', quantity: 1, unitPrice: 38000, unitCost: 26000, totalPrice: 38000, totalCost: 26000 },
+      { uniformId: 'polo-unisex', uniformName: 'Camiseta Polo', size: 'M', quantity: 1, unitPrice: 38000, unitCost: 26000, totalPrice: 38000, totalCost: 26000 },
       { uniformId: 'falda', uniformName: 'Falda Escolar', size: 'S', quantity: 1, unitPrice: 38000, unitCost: 25500, totalPrice: 38000, totalCost: 25500 },
     ],
     totalAmount: 76000,
@@ -179,5 +159,23 @@ export const mockSales: Sale[] = [
     totalProfit: 24500,
     paymentMethod: 'efectivo',
     generatedBy: 'admin',
+  },
+  {
+    id: 'sale002',
+    date: new Date().toISOString(), // Today
+    customerName: 'Carlos López',
+    items: [
+      { uniformId: 'camiseta-deporte', uniformName: 'Camiseta Deporte', size: '10', quantity: 2, unitPrice: 32000, unitCost: 22000, totalPrice: 64000, totalCost: 44000 },
+    ],
+    totalAmount: 64000,
+    totalCostAmount: 44000,
+    totalProfit: 20000,
+    paymentMethod: 'transferencia',
+    paymentProofFileName: 'comprobante_clopez.pdf',
+    generatedBy: 'secretary',
   }
 ];
+// Function to update mock sales if needed, for example, from localStorage
+export const setMockSales = (newSales: Sale[]) => {
+  mockSales = newSales;
+};

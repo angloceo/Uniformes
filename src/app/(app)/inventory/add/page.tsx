@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -20,12 +21,21 @@ export default function AddStockPage() {
   const [quantity, setQuantity] = useState<number | string>('');
   const [entryDate, setEntryDate] = useState<string>('');
   const [loading, setLoading] = useState(true);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setUniforms(initialUniforms);
-    setEntryDate(new Date().toISOString().split('T')[0]); // Default to today
-    setLoading(false);
+    setMounted(true);
   }, []);
+
+  useEffect(() => {
+    if(mounted){
+      const storedUniforms = localStorage.getItem('updatedUniformsData');
+      const liveUniforms = storedUniforms ? JSON.parse(storedUniforms) : initialUniforms;
+      setUniforms(liveUniforms);
+      setEntryDate(new Date().toISOString().split('T')[0]); 
+      setLoading(false);
+    }
+  }, [mounted]);
 
   const selectedUniform = uniforms.find(u => u.id === selectedUniformId);
 
@@ -40,26 +50,45 @@ export default function AddStockPage() {
       return;
     }
 
-    // In a real app, this would update the backend/database
-    console.log({
-      uniformId: selectedUniformId,
-      size: selectedSize,
-      quantity: Number(quantity),
-      date: entryDate,
-    });
+    if (mounted) {
+      let currentUniformsData = JSON.parse(localStorage.getItem('updatedUniformsData') || JSON.stringify(initialUniforms)) as Uniform[];
+      
+      currentUniformsData = currentUniformsData.map(uni => {
+        if (uni.id === selectedUniformId) {
+          return {
+            ...uni,
+            sizes: uni.sizes.map(s => {
+              if (s.size === selectedSize) {
+                return { ...s, stock: s.stock + Number(quantity) };
+              }
+              return s;
+            })
+          };
+        }
+        return uni;
+      });
+      
+      localStorage.setItem('updatedUniformsData', JSON.stringify(currentUniformsData));
+      setUniforms(currentUniformsData); // Update local state for immediate reflection if needed
+
+      console.log("Stock de localStorage actualizado:", {
+        uniformId: selectedUniformId,
+        size: selectedSize,
+        quantity: Number(quantity),
+        date: entryDate,
+      });
+    }
+
 
     toast({
       title: "Stock Ingresado",
-      description: `${quantity} unidades de ${selectedUniform?.name} (Talla: ${selectedSize}) ingresadas.`,
+      description: `${quantity} unidades de ${selectedUniform?.name} (Talla: ${selectedSize}) ingresadas. El inventario ha sido actualizado.`,
     });
-    // Reset form or navigate
-    // setSelectedUniformId('');
-    // setSelectedSize('');
-    // setQuantity('');
-    router.push('/inventory'); // Navigate back to inventory list
+    
+    router.push('/inventory'); 
   };
   
-  if (loading) {
+  if (!mounted || loading) {
     return (
       <div className="space-y-6 animate-pulse">
         <div className="h-8 bg-muted rounded w-1/4"></div>
@@ -103,7 +132,7 @@ export default function AddStockPage() {
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <Label htmlFor="uniform">Tipo de Prenda</Label>
-              <Select value={selectedUniformId} onValueChange={setSelectedUniformId}>
+              <Select value={selectedUniformId} onValueChange={(value) => {setSelectedUniformId(value); setSelectedSize('');}}>
                 <SelectTrigger id="uniform">
                   <SelectValue placeholder="Selecciona una prenda" />
                 </SelectTrigger>
@@ -163,3 +192,4 @@ export default function AddStockPage() {
     </div>
   );
 }
+
