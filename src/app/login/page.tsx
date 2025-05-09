@@ -20,21 +20,25 @@ const verifyMockHash = (password: string, hashedPassword: string): boolean => cr
 interface AppUser {
   id: string;
   username: string;
-  hashed_password: string; // Changed from password_plaintext
+  email: string;
+  hashed_password: string;
   role: 'admin' | 'secretary';
 }
 
+// Ensure these defaults match those in settings/page.tsx if settings are cleared/reinitialized
 const defaultAdminUser: AppUser = {
-  id: `user-${Date.now()}-admin`,
+  id: `user-default-admin`, // Consistent ID
   username: 'admin',
-  hashed_password: createMockHash('admin123'), // Store hashed password
+  email: 'admin@colegioanglo.edu.co',
+  hashed_password: createMockHash('Admin@123!'), 
   role: 'admin'
 };
 
 const defaultSecretaryUser: AppUser = {
-  id: `user-${Date.now()}-secretary`,
+  id: `user-default-secretary`, // Consistent ID
   username: 'secretary',
-  hashed_password: createMockHash('secretary123'), // Store hashed password
+  email: 'secretary@colegioanglo.edu.co',
+  hashed_password: createMockHash('Secretary@123!'),
   role: 'secretary'
 };
 
@@ -53,8 +57,8 @@ export default function LoginPage() {
       if (storedUsersRaw) {
         try {
           const parsedUsers = JSON.parse(storedUsersRaw) as AppUser[];
-          // Basic validation for stored user structure
-          if (Array.isArray(parsedUsers) && parsedUsers.length > 0 && parsedUsers.every(u => u.username && u.hashed_password && u.role)) {
+          // Basic validation for stored user structure, now including email
+          if (Array.isArray(parsedUsers) && parsedUsers.length > 0 && parsedUsers.every(u => u.username && u.email && u.hashed_password && u.role)) {
             setAppUsers(parsedUsers);
           } else {
             // Initialize with defaults if empty or invalid structure
@@ -82,7 +86,7 @@ export default function LoginPage() {
     if (!mounted) return;
 
     const user = appUsers.find(
-      (u) => u.username === username && verifyMockHash(password, u.hashed_password)
+      (u) => u.username.toLowerCase() === username.toLowerCase() && verifyMockHash(password, u.hashed_password)
     );
 
     if (user) {
@@ -159,3 +163,4 @@ export default function LoginPage() {
     </div>
   );
 }
+
