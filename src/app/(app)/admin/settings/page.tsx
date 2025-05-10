@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect, type FormEvent, useMemo } from 'react';
@@ -50,6 +49,17 @@ const defaultSecretaryUser: AppUser = {
 
 const PASSWORD_POLICY_TEXT = "La contraseña debe tener al menos 8 caracteres, incluyendo mayúsculas, minúsculas, números y un símbolo (ej: !@#$%).";
 
+function isLocalStorageAvailable(): boolean {
+  try {
+    const testKey = '__testLocalStorage__';
+    localStorage.setItem(testKey, testKey);
+    localStorage.removeItem(testKey);
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
 export default function AdminSettingsPage() {
   const { toast } = useToast();
   const [uniformTypes, setUniformTypes] = useState<Uniform[]>([]);
@@ -57,6 +67,8 @@ export default function AdminSettingsPage() {
   const [loading, setLoading] = useState(true);
   const [mounted, setMounted] = useState(false);
   const [hasUniformChanges, setHasUniformChanges] = useState(false);
+  const [localStorageAvailable, setLocalStorageAvailable] = useState(true);
+
 
   // User management state
   const [appUsers, setAppUsers] = useState<AppUser[]>([]);
@@ -80,19 +92,48 @@ export default function AdminSettingsPage() {
 
   useEffect(() => {
     if (mounted) {
-      const role = localStorage.getItem('userRole') as 'admin' | 'secretary' | null;
-      const userId = localStorage.getItem('loggedInUserId');
-      setCurrentUserRole(role);
-      setCurrentUserId(userId);
+      const storageAvailable = isLocalStorageAvailable();
+      setLocalStorageAvailable(storageAvailable);
+
+      if (!storageAvailable) {
+        toast({
+          title: "Advertencia de Almacenamiento",
+          description: "El almacenamiento local no está disponible o está restringido. Los cambios no se guardarán permanentemente y se usarán datos de demostración.",
+          variant: "destructive",
+          duration: 10000,
+        });
+      }
+      
+      try {
+        const role = storageAvailable ? localStorage.getItem('userRole') as 'admin' | 'secretary' | null : null;
+        const userId = storageAvailable ? localStorage.getItem('loggedInUserId') : null;
+        setCurrentUserRole(role);
+        setCurrentUserId(userId);
+      } catch (error) {
+        console.error("Error accessing user role/ID from localStorage:", error);
+        setCurrentUserRole(null);
+        setCurrentUserId(null);
+        if (storageAvailable) { // Only toast if storage was thought to be available
+             toast({ title: "Error", description: "No se pudo leer la información del usuario actual.", variant: "destructive" });
+        }
+      }
+      
 
       // Load Uniforms
-      const storedUniformsRaw = localStorage.getItem('updatedUniformsData');
       let liveUniformsData: Uniform[];
-      if (storedUniformsRaw) {
+      if (storageAvailable) {
         try {
-          liveUniformsData = JSON.parse(storedUniformsRaw);
+          const storedUniformsRaw = localStorage.getItem('updatedUniformsData');
+          if (storedUniformsRaw) {
+            liveUniformsData = JSON.parse(storedUniformsRaw);
+          } else {
+            liveUniformsData = JSON.parse(JSON.stringify(initialUniforms));
+            localStorage.setItem('updatedUniformsData', JSON.stringify(liveUniformsData));
+          }
         } catch (error) {
+          console.error("Error loading/parsing uniforms from localStorage:", error);
           liveUniformsData = JSON.parse(JSON.stringify(initialUniforms));
+           toast({ title: "Error de Datos (Uniformes)", description: "Se usarán datos de uniformes por defecto.", variant: "destructive" });
         }
       } else {
         liveUniformsData = JSON.parse(JSON.stringify(initialUniforms));
@@ -101,31 +142,36 @@ export default function AdminSettingsPage() {
       setEditedUniformTypes(JSON.parse(JSON.stringify(liveUniformsData)));
 
       // Load Users
-      const storedUsersRaw = localStorage.getItem('appUsersData');
       let liveUsersData: AppUser[];
-      if (storedUsersRaw) {
+      if (storageAvailable) {
         try {
-          const parsedUsers = JSON.parse(storedUsersRaw) as AppUser[];
-           if (Array.isArray(parsedUsers) && parsedUsers.length > 0 && parsedUsers.every(u => u.username && u.email && u.hashed_password && u.role)) {
-            liveUsersData = parsedUsers;
+          const storedUsersRaw = localStorage.getItem('appUsersData');
+          if (storedUsersRaw) {
+            const parsedUsers = JSON.parse(storedUsersRaw) as AppUser[];
+            if (Array.isArray(parsedUsers) && parsedUsers.length > 0 && parsedUsers.every(u => u.username && u.email && u.hashed_password && u.role)) {
+              liveUsersData = parsedUsers;
+            } else {
+              liveUsersData = [defaultAdminUser, defaultSecretaryUser];
+              localStorage.setItem('appUsersData', JSON.stringify(liveUsersData));
+            }
           } else {
             liveUsersData = [defaultAdminUser, defaultSecretaryUser];
             localStorage.setItem('appUsersData', JSON.stringify(liveUsersData));
           }
         } catch (error) {
+          console.error("Error loading/parsing users from localStorage:", error);
           liveUsersData = [defaultAdminUser, defaultSecretaryUser];
-          localStorage.setItem('appUsersData', JSON.stringify(liveUsersData));
+          toast({ title: "Error de Datos (Usuarios)", description: "Se usarán datos de usuarios por defecto.", variant: "destructive" });
         }
       } else {
         liveUsersData = [defaultAdminUser, defaultSecretaryUser];
-        localStorage.setItem('appUsersData', JSON.stringify(liveUsersData));
       }
       setAppUsers(liveUsersData);
       setEditedAppUsers(JSON.parse(JSON.stringify(liveUsersData)));
 
       setLoading(false);
     }
-  }, [mounted]);
+  }, [mounted, toast]);
 
   const handleUniformInputChange = (id: string, field: 'name' | 'category', value: string) => {
     setEditedUniformTypes(currentTypes =>
@@ -141,10 +187,19 @@ export default function AdminSettingsPage() {
       toast({ title: "Error de Validación", description: "El nombre y la categoría de la prenda no pueden estar vacíos.", variant: "destructive" });
       return;
     }
-    localStorage.setItem('updatedUniformsData', JSON.stringify(editedUniformTypes));
-    setUniformTypes(JSON.parse(JSON.stringify(editedUniformTypes)));
-    toast({ title: "Cambios Guardados", description: "Los tipos de prendas han sido actualizados." });
-    setHasUniformChanges(false);
+    if (!localStorageAvailable) {
+        toast({ title: "Guardado Deshabilitado", description: "El almacenamiento local no está disponible. Los cambios no se pueden guardar.", variant: "destructive" });
+        return;
+    }
+    try {
+        localStorage.setItem('updatedUniformsData', JSON.stringify(editedUniformTypes));
+        setUniformTypes(JSON.parse(JSON.stringify(editedUniformTypes)));
+        toast({ title: "Cambios Guardados", description: "Los tipos de prendas han sido actualizados." });
+        setHasUniformChanges(false);
+    } catch (error) {
+        console.error("Error saving uniform changes to localStorage:", error);
+        toast({ title: "Error al Guardar Uniformes", description: "No se pudieron guardar los cambios. Revise la consola.", variant: "destructive" });
+    }
   };
 
   // User Management Handlers
@@ -248,7 +303,7 @@ export default function AdminSettingsPage() {
           if (new_password_plaintext && new_password_plaintext.trim()) {
             updatedUser.hashed_password = createMockHash(new_password_plaintext.trim());
           }
-          if (currentUserRole === 'admin') {
+          if (currentUserRole === 'admin') { // Only admin can change role
             updatedUser.role = role;
           }
           return updatedUser;
@@ -262,10 +317,19 @@ export default function AdminSettingsPage() {
   };
 
   const handleSaveUserChanges = () => {
-    localStorage.setItem('appUsersData', JSON.stringify(editedAppUsers));
-    setAppUsers(JSON.parse(JSON.stringify(editedAppUsers)));
-    toast({ title: "Cambios Guardados", description: "La información de los usuarios ha sido actualizada."});
-    setHasUserChanges(false);
+    if (!localStorageAvailable) {
+        toast({ title: "Guardado Deshabilitado", description: "El almacenamiento local no está disponible. Los cambios no se pueden guardar.", variant: "destructive" });
+        return;
+    }
+    try {
+        localStorage.setItem('appUsersData', JSON.stringify(editedAppUsers));
+        setAppUsers(JSON.parse(JSON.stringify(editedAppUsers)));
+        toast({ title: "Cambios Guardados", description: "La información de los usuarios ha sido actualizada."});
+        setHasUserChanges(false);
+    } catch (error) {
+        console.error("Error saving user changes to localStorage:", error);
+        toast({ title: "Error al Guardar Usuarios", description: "No se pudieron guardar los cambios. Revise la consola.", variant: "destructive" });
+    }
   };
 
   const handleDeleteUser = (user: AppUser) => {
@@ -295,7 +359,8 @@ export default function AdminSettingsPage() {
     if (currentUserRole === 'admin') {
       return editedAppUsers;
     }
-    if (currentUserRole === 'secretary') {
+    // Secretaries can only see and edit their own profile
+    if (currentUserRole === 'secretary' && currentUserId) {
       return editedAppUsers.filter(user => user.id === currentUserId);
     }
     return [];
@@ -327,7 +392,20 @@ export default function AdminSettingsPage() {
         <CardDescription>Gestión de datos maestros y usuarios del sistema.</CardDescription>
       </CardHeader>
 
-      {(hasUniformChanges || hasUserChanges) && (
+      {!localStorageAvailable && (
+          <Card className="border-destructive bg-destructive/10">
+              <CardContent className="pt-6">
+                  <div className="flex items-center">
+                  <AlertCircle className="h-5 w-5 text-destructive mr-2" />
+                  <p className="text-sm text-destructive-foreground font-medium">
+                      El almacenamiento local no está disponible o está restringido. Los cambios no se guardarán y se están utilizando datos de demostración.
+                  </p>
+                  </div>
+              </CardContent>
+          </Card>
+      )}
+
+      {(hasUniformChanges || hasUserChanges) && localStorageAvailable && (
         <Card className="border-primary bg-primary/10">
           <CardContent className="pt-6">
             <div className="flex items-center">
@@ -369,7 +447,7 @@ export default function AdminSettingsPage() {
           </ScrollArea>
         </CardContent>
         <CardFooter className="flex justify-end">
-          <Button onClick={handleSaveUniformChanges} disabled={!hasUniformChanges} className="shadow hover:shadow-md"><Save className="mr-2 h-4 w-4" />Guardar Cambios en Prendas</Button>
+          <Button onClick={handleSaveUniformChanges} disabled={!hasUniformChanges || !localStorageAvailable} className="shadow hover:shadow-md"><Save className="mr-2 h-4 w-4" />Guardar Cambios en Prendas</Button>
         </CardFooter>
       </Card>
 
@@ -382,7 +460,7 @@ export default function AdminSettingsPage() {
           {currentUserRole === 'admin' && (
             <Dialog open={isAddUserDialogOpen} onOpenChange={setIsAddUserDialogOpen}>
               <DialogTrigger asChild>
-                <Button onClick={handleOpenAddUserDialog} className="shadow hover:shadow-md"><UserPlus className="mr-2 h-4 w-4" />Agregar Usuario</Button>
+                <Button onClick={handleOpenAddUserDialog} className="shadow hover:shadow-md" disabled={!localStorageAvailable}><UserPlus className="mr-2 h-4 w-4" />Agregar Usuario</Button>
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader><DialogTitle>Agregar Nuevo Usuario</DialogTitle></DialogHeader>
@@ -418,21 +496,31 @@ export default function AdminSettingsPage() {
                     <TableCell className="text-muted-foreground">{user.email}</TableCell>
                     <TableCell className="capitalize">{user.role}</TableCell>
                     <TableCell className="text-right space-x-1">
-                      <Button variant="outline" size="sm" onClick={() => handleOpenEditUserDialog(user)} className="shadow-sm hover:shadow"><Edit3 className="mr-1.5 h-3.5 w-3.5" />Editar</Button>
+                      <Button variant="outline" size="sm" onClick={() => handleOpenEditUserDialog(user)} className="shadow-sm hover:shadow" disabled={!localStorageAvailable}><Edit3 className="mr-1.5 h-3.5 w-3.5" />Editar</Button>
                       {currentUserRole === 'admin' && user.id !== currentUserId && ( 
-                        <Button variant="destructive" size="sm" onClick={() => handleDeleteUser(user)} className="shadow-sm hover:shadow">
+                        <Button variant="destructive" size="sm" onClick={() => handleDeleteUser(user)} className="shadow-sm hover:shadow" disabled={!localStorageAvailable}>
                             <Trash2 className="mr-1.5 h-3.5 w-3.5" />Eliminar
                         </Button>
                       )}
                     </TableCell>
                   </TableRow>
                 ))}
+                 {displayedUsers.length === 0 && (
+                    <TableRow>
+                        <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
+                        No hay usuarios para mostrar.
+                        {currentUserRole === 'admin' && localStorageAvailable && ' Intenta agregar uno.'}
+                        {currentUserRole === 'secretary' && 'Solo puedes ver tu propio perfil.'}
+                        {!localStorageAvailable && ' El almacenamiento local no está disponible.'}
+                        </TableCell>
+                    </TableRow>
+                )}
               </TableBody>
             </Table>
           </ScrollArea>
         </CardContent>
         <CardFooter className="flex justify-end">
-          <Button onClick={handleSaveUserChanges} disabled={!hasUserChanges} className="shadow hover:shadow-md"><Save className="mr-2 h-4 w-4" />Guardar Cambios en Usuarios</Button>
+          <Button onClick={handleSaveUserChanges} disabled={!hasUserChanges || !localStorageAvailable} className="shadow hover:shadow-md"><Save className="mr-2 h-4 w-4" />Guardar Cambios en Usuarios</Button>
         </CardFooter>
       </Card>
       
@@ -456,7 +544,7 @@ export default function AdminSettingsPage() {
                 <Select 
                     value={editUserFormState.role} 
                     onValueChange={(value: 'admin' | 'secretary') => setEditUserFormState(s => ({ ...s, role: value }))}
-                    disabled={editUserFormState.id === currentUserId && editUserFormState.role === 'admin'} 
+                    disabled={editUserFormState.id === currentUserId && editUserFormState.role === 'admin'} // Admin cannot change their own role if they are the one being edited
                 >
                     <SelectTrigger id="editRole"><SelectValue /></SelectTrigger>
                     <SelectContent>
