@@ -10,100 +10,79 @@ import { Label } from '@/components/ui/label';
 import { useState, useEffect, type FormEvent } from 'react';
 import { siteConfig } from '@/config/site';
 import { useToast } from '@/hooks/use-toast';
-
-// IMPORTANT: This is a MOCK HASH for demonstration purposes ONLY.
-// In a real application, use a strong, secure, server-side hashing algorithm.
-const MOCK_HASH_PREFIX = "mock_hashed::";
-const createMockHash = (password: string): string => `${MOCK_HASH_PREFIX}${password}`;
-const verifyMockHash = (password: string, hashedPassword: string): boolean => createMockHash(password) === hashedPassword;
-
-interface AppUser {
-  id: string;
-  username: string;
-  email: string;
-  hashed_password: string;
-  role: 'admin' | 'secretary';
-}
-
-// Ensure these defaults match those in settings/page.tsx if settings are cleared/reinitialized
-const defaultAdminUser: AppUser = {
-  id: `user-default-admin`, // Consistent ID
-  username: 'admin',
-  email: 'admin@colegioanglo.edu.co',
-  hashed_password: createMockHash('Admin@123!'), 
-  role: 'admin'
-};
-
-const defaultSecretaryUser: AppUser = {
-  id: `user-default-secretary`, // Consistent ID
-  username: 'secretary',
-  email: 'secretary@colegioanglo.edu.co',
-  hashed_password: createMockHash('Secretary@123!'),
-  role: 'secretary'
-};
+import { auth, db } from '@/lib/firebase'; // Import Firebase auth and db
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore';
 
 export default function LoginPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState(''); // Changed from username to email
   const [password, setPassword] = useState('');
-  const [appUsers, setAppUsers] = useState<AppUser[]>([]);
   const [mounted, setMounted] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     setMounted(true);
-    if (typeof window !== 'undefined') {
-      const storedUsersRaw = localStorage.getItem('appUsersData');
-      if (storedUsersRaw) {
-        try {
-          const parsedUsers = JSON.parse(storedUsersRaw) as AppUser[];
-          // Basic validation for stored user structure, now including email
-          if (Array.isArray(parsedUsers) && parsedUsers.length > 0 && parsedUsers.every(u => u.username && u.email && u.hashed_password && u.role)) {
-            setAppUsers(parsedUsers);
-          } else {
-            // Initialize with defaults if empty or invalid structure
-            const defaultUsers = [defaultAdminUser, defaultSecretaryUser];
-            localStorage.setItem('appUsersData', JSON.stringify(defaultUsers));
-            setAppUsers(defaultUsers);
-          }
-        } catch (error) {
-          console.error("Error parsing appUsersData from localStorage:", error);
-          const defaultUsers = [defaultAdminUser, defaultSecretaryUser];
-          localStorage.setItem('appUsersData', JSON.stringify(defaultUsers));
-          setAppUsers(defaultUsers);
-        }
-      } else {
-        // Initialize with defaults if not present
-        const defaultUsers = [defaultAdminUser, defaultSecretaryUser];
-        localStorage.setItem('appUsersData', JSON.stringify(defaultUsers));
-        setAppUsers(defaultUsers);
+    // Check if user is already logged in
+    const unsubscribe = auth.onAuthStateChanged(user => {
+      if (user) {
+        // Optionally fetch role here and redirect if already logged in and role is known
+        // For now, simple redirect if user object exists
+        // router.push('/dashboard'); 
       }
-    }
-  }, []);
+    });
+    return () => unsubscribe();
+  }, [router]);
 
-  const handleLoginAttempt = (event: FormEvent) => {
+  const handleLoginAttempt = async (event: FormEvent) => {
     event.preventDefault();
     if (!mounted) return;
+    setLoading(true);
 
-    const user = appUsers.find(
-      (u) => u.username.toLowerCase() === username.toLowerCase() && verifyMockHash(password, u.hashed_password)
-    );
+    try {
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
 
-    if (user) {
-      localStorage.setItem('userRole', user.role);
-      localStorage.setItem('loggedInUser', user.username); 
-      localStorage.setItem('loggedInUserId', user.id); // Store user ID
-      toast({
-        title: "Inicio de Sesión Exitoso",
-        description: `Bienvenido ${user.username}. Redirigiendo...`,
-      });
-      router.push('/dashboard');
-    } else {
+      // Fetch user role from Firestore
+      const userDocRef = doc(db, "users", user.uid);
+      const userDocSnap = await getDoc(userDocRef);
+
+      if (userDocSnap.exists()) {
+        const userData = userDocSnap.data();
+        localStorage.setItem('userRole', userData.role);
+        localStorage.setItem('loggedInUser', userData.username || user.email || 'Usuario'); // Use username from Firestore if available
+        localStorage.setItem('loggedInUserId', user.uid);
+        
+        toast({
+          title: "Inicio de Sesión Exitoso",
+          description: `Bienvenido ${userData.username || user.email}. Redirigiendo...`,
+        });
+        router.push('/dashboard');
+      } else {
+        // This case should ideally not happen if users are created correctly with a Firestore document
+        toast({
+          title: "Error de Autenticación",
+          description: "No se encontró información adicional del usuario. Contacte al administrador.",
+          variant: "destructive",
+        });
+        await auth.signOut(); // Sign out user as their data is incomplete
+      }
+    } catch (error: any) {
+      console.error("Firebase login error:", error);
+      let errorMessage = "Error de autenticación. Verifique sus credenciales.";
+      if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+        errorMessage = "Email o contraseña incorrectos.";
+      } else if (error.code === 'auth/invalid-email') {
+        errorMessage = "El formato del email es inválido.";
+      }
       toast({
         title: "Error de Autenticación",
-        description: "Nombre de usuario o contraseña incorrectos.",
+        description: errorMessage,
         variant: "destructive",
       });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -129,14 +108,15 @@ export default function LoginPage() {
         <CardContent>
           <form onSubmit={handleLoginAttempt} className="space-y-6">
             <div className="space-y-2">
-              <Label htmlFor="username">Nombre de Usuario</Label>
+              <Label htmlFor="email">Email</Label> {/* Changed from username to email */}
               <Input 
-                id="username" 
-                type="text" 
-                placeholder="usuario" 
-                value={username} 
-                onChange={(e) => setUsername(e.target.value)} 
+                id="email" 
+                type="email" // Changed type to email
+                placeholder="tu@email.com" 
+                value={email} 
+                onChange={(e) => setEmail(e.target.value)} 
                 required 
+                autoComplete="email"
               />
             </div>
             <div className="space-y-2">
@@ -148,11 +128,12 @@ export default function LoginPage() {
                 value={password} 
                 onChange={(e) => setPassword(e.target.value)} 
                 required 
+                autoComplete="current-password"
               />
             </div>
             
-            <Button type="submit" className="w-full">
-              Iniciar Sesión
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading ? 'Ingresando...' : 'Iniciar Sesión'}
             </Button>
           </form>
         </CardContent>
@@ -163,4 +144,3 @@ export default function LoginPage() {
     </div>
   );
 }
-

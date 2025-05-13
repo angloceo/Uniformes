@@ -10,9 +10,11 @@ import { AppLogo } from '@/components/AppLogo';
 import type { Sale } from '@/lib/mock-data'; 
 import { Printer, ArrowLeft, Paperclip } from 'lucide-react';
 import { siteConfig } from '@/config/site';
-import { formatDisplayId } from '@/lib/utils'; // Import the utility
+import { formatDisplayId } from '@/lib/utils';
+// import { db } from '@/lib/firebase'; // If fetching generatedBy username from Firestore
+// import { doc, getDoc } from 'firebase/firestore';
 
-const ReceiptCardContent = ({ saleData, displayId }: { saleData: Sale, displayId: string }) => {
+const ReceiptCardContent = ({ saleData, displayId, generatedByUsername }: { saleData: Sale, displayId: string, generatedByUsername: string }) => {
   if (!saleData) return null;
   return (
     <Card className="shadow-lg print:shadow-none print:border print:border-gray-300 print-receipt-card w-full h-full flex flex-col">
@@ -48,7 +50,7 @@ const ReceiptCardContent = ({ saleData, displayId }: { saleData: Sale, displayId
           </div>
           <div>
             <p className="font-semibold text-foreground">Atendido por:</p>
-            <p className="text-muted-foreground capitalize">{saleData.generatedBy}</p>
+            <p className="text-muted-foreground capitalize">{generatedByUsername}</p> {/* Display username */}
           </div>
           <div>
             <p className="font-semibold text-foreground">Método de Pago:</p>
@@ -117,20 +119,24 @@ export default function ReceiptPage() {
   const [saleData, setSaleData] = useState<Sale | null>(null);
   const [mounted, setMounted] = useState(false);
   const [displayId, setDisplayId] = useState<string>('');
+  const [generatedByUsername, setGeneratedByUsername] = useState<string>('Desconocido');
   
   const printableAreaRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setMounted(true);
-    if (mounted && receiptId) { // Ensure mounted and receiptId exist
+    if (mounted && receiptId) {
       const allSales = JSON.parse(localStorage.getItem('mockSales') || '[]') as Sale[];
       const foundSale = allSales.find(s => s.id === receiptId);
 
       if (foundSale) {
         setSaleData(foundSale);
         setDisplayId(formatDisplayId(foundSale.id, foundSale.date));
+        // For now, using role from sale data or fallback. 
+        // Ideally, fetch username from Firestore using foundSale.generatedBy (which is UID)
+        setGeneratedByUsername(foundSale.generatedByRole || 'Usuario'); 
       } else {
-        setSaleData(null); // Sale not found
+        setSaleData(null);
       }
     }
   }, [receiptId, mounted]);
@@ -176,69 +182,28 @@ export default function ReceiptPage() {
         </Button>
       </div>
 
-      {/* Screen View: Shows one receipt */}
       <div className="print:hidden">
-        <ReceiptCardContent saleData={saleData} displayId={displayId} />
+        <ReceiptCardContent saleData={saleData} displayId={displayId} generatedByUsername={generatedByUsername} />
       </div>
       
-      {/* Print View: Shows two copies of the receipt */}
       <div ref={printableAreaRef} className="printable-area hidden">
-        {/* Two instances of the receipt for printing */}
-        <ReceiptCardContent saleData={saleData} displayId={displayId} />
-        <ReceiptCardContent saleData={saleData} displayId={displayId} />
+        <ReceiptCardContent saleData={saleData} displayId={displayId} generatedByUsername={generatedByUsername} />
+        <ReceiptCardContent saleData={saleData} displayId={displayId} generatedByUsername={generatedByUsername} />
       </div>
       
       <style jsx global>{`
         @media print {
-          body {
-            margin: 0;
-            padding: 0;
-            -webkit-print-color-adjust: exact; /* Chrome, Safari */
-            print-color-adjust: exact; /* Firefox, Edge */
-          }
-          body * {
-            visibility: hidden;
-          }
-          .printable-area, .printable-area * {
-            visibility: visible;
-          }
-          .printable-area {
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 210mm; /* A4 width */
-            height: 297mm; /* A4 height */
-            display: flex;
-            flex-direction: column;
-            justify-content: flex-start; /* Align to top */
-            align-items: center; /* Center horizontally */
-            gap: 5mm; /* Gap between receipts */
-            padding: 5mm; /* Padding for the page */
-            box-sizing: border-box;
-            overflow: hidden; /* Prevent scrollbars on the print page */
-          }
-          .print-receipt-card {
-            width: 190mm; /* Width of each receipt */
-            height: 135mm; /* Height of each receipt, approx half A4 minus gap */
-            border: 1px solid #ccc !important;
-            box-shadow: none !important;
-            page-break-inside: avoid !important; /* Try to keep each receipt on one part */
-            overflow: hidden; /* Clip content if it overflows */
-            display: flex !important;
-            flex-direction: column !important;
-          }
+          body { margin: 0; padding: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+          body * { visibility: hidden; }
+          .printable-area, .printable-area * { visibility: visible; }
+          .printable-area { position: absolute; left: 0; top: 0; width: 210mm; height: 297mm; display: flex; flex-direction: column; justify-content: flex-start; align-items: center; gap: 5mm; padding: 5mm; box-sizing: border-box; overflow: hidden; }
+          .print-receipt-card { width: 190mm; height: 135mm; border: 1px solid #ccc !important; box-shadow: none !important; page-break-inside: avoid !important; overflow: hidden; display: flex !important; flex-direction: column !important; }
           .print-receipt-card > div[class*="CardHeader"] { flex-shrink: 0; }
-          .print-receipt-card > div[class*="CardContent"] { flex-grow: 1; overflow-y: hidden; } /* Hidden to prevent internal scrollbars appearing on print */
+          .print-receipt-card > div[class*="CardContent"] { flex-grow: 1; overflow-y: hidden; }
           .print-receipt-card > div[class*="CardFooter"] { flex-shrink: 0; }
-
-          .print\\:hidden {
-            display: none !important;
-          }
+          .print\\:hidden { display: none !important; }
         }
-        @page {
-          size: A4;
-          margin: 0; /* Remove browser default margins */
-        }
+        @page { size: A4; margin: 0; }
       `}</style>
     </div>
   );

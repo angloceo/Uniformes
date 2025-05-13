@@ -3,8 +3,10 @@
 
 import { useRouter } from 'next/navigation';
 import { useEffect, useState, type ReactNode } from 'react';
-import { Skeleton } from '@/components/ui/skeleton'; // For loading state
-import { Button } from '@/components/ui/button'; // Import Button component
+import { Skeleton } from '@/components/ui/skeleton';
+import { Button } from '@/components/ui/button';
+import { auth } from '@/lib/firebase'; // Import Firebase auth
+import { onAuthStateChanged } from 'firebase/auth';
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
@@ -18,14 +20,23 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (mounted) {
-      const role = localStorage.getItem('userRole');
-      if (role === 'admin') {
-        setIsAdmin(true);
-      } else {
-        // Redirect non-admins or unauthenticated users
-        router.push('/dashboard'); 
-      }
-      setLoading(false);
+      const unsubscribe = onAuthStateChanged(auth, (user) => {
+        if (user) {
+          // Role is expected to be in localStorage, set after successful login and Firestore fetch
+          const role = localStorage.getItem('userRole');
+          if (role === 'admin') {
+            setIsAdmin(true);
+          } else {
+            // If not admin, or role not found, redirect
+            router.push('/dashboard'); 
+          }
+        } else {
+          // No user logged in, redirect to login
+          router.push('/login');
+        }
+        setLoading(false);
+      });
+      return () => unsubscribe();
     }
   }, [router, mounted]);
 
@@ -40,8 +51,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   }
 
   if (!isAdmin) {
-    // This case is mainly a fallback if redirection is slow or fails.
-    // The user should have been redirected by the useEffect.
+    // This case handles if the user is not an admin after checks.
     return (
         <div className="flex flex-col items-center justify-center min-h-screen p-4 text-center">
             <h1 className="text-2xl font-bold text-destructive">Acceso Denegado</h1>
@@ -55,4 +65,3 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
 
   return <>{children}</>;
 }
-

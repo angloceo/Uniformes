@@ -13,6 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useToast } from "@/hooks/use-toast";
 import { initialUniforms, type Uniform, type SaleItem, type PaymentMethod, type Sale } from '@/lib/mock-data';
 import { ShoppingCart, PlusCircle, Trash2, ArrowLeft, FileSignature, UploadCloud } from 'lucide-react';
+import { auth } from '@/lib/firebase'; // Import Firebase auth
 
 export default function NewSalePage() {
   const router = useRouter();
@@ -30,12 +31,27 @@ export default function NewSalePage() {
   const [paymentProofFile, setPaymentProofFile] = useState<File | null>(null);
   
   const [mounted, setMounted] = useState(false);
+  const [currentUserUid, setCurrentUserUid] = useState<string | null>(null);
+  const [currentUserRole, setCurrentUserRole] = useState<string | null>(null);
+
 
   useEffect(() => {
     setMounted(true);
+    const unsubscribe = auth.onAuthStateChanged(user => {
+      if (user) {
+        setCurrentUserUid(user.uid);
+        setCurrentUserRole(localStorage.getItem('userRole')); // Role from localStorage after login
+      } else {
+        setCurrentUserUid(null);
+        setCurrentUserRole(null);
+      }
+    });
+
     const storedUniforms = typeof window !== 'undefined' ? localStorage.getItem('updatedUniformsData') : null;
     const liveUniforms = storedUniforms ? JSON.parse(storedUniforms) : initialUniforms;
     setUniformsData(liveUniforms);
+    
+    return () => unsubscribe();
   }, []);
 
   const selectedUniformForForm = uniformsData.find(u => u.id === currentUniformId);
@@ -69,11 +85,10 @@ export default function NewSalePage() {
         const updatedItems = [...prevItems];
         const combinedQuantity = updatedItems[existingItemIndex].quantity + newItem.quantity;
         
-        // Check stock for combined quantity
         const stockForItem = selectedUniformForForm.sizes.find(s => s.size === newItem.size)?.stock ?? 0;
         if (combinedQuantity > stockForItem) {
              toast({ title: "Stock Insuficiente", description: `No puedes agregar ${newItem.quantity} más. Ya tienes ${updatedItems[existingItemIndex].quantity} en el carrito y solo hay ${stockForItem} unidades de ${selectedUniformForForm.name} (Talla: ${newItem.size}).`, variant: "destructive"});
-             return prevItems; // Return previous items without change
+             return prevItems; 
         }
 
         updatedItems[existingItemIndex].quantity = combinedQuantity;
@@ -119,9 +134,13 @@ export default function NewSalePage() {
         toast({ title: "Método de Pago", description: "Selecciona un método de pago.", variant: "destructive"});
         return;
     }
+    if (!currentUserUid || !currentUserRole) {
+        toast({ title: "Error de Usuario", description: "No se pudo identificar al usuario. Intenta iniciar sesión de nuevo.", variant: "destructive"});
+        return;
+    }
     
     const saleData: Sale = {
-      id: `sale-${Date.now()}`,
+      id: `sale-${Date.now()}-${Math.random().toString(36).substring(2,7)}`, // Keep unique ID generation for localStorage version
       customerName,
       items: saleItems,
       totalAmount: totalSaleAmount,
@@ -130,12 +149,12 @@ export default function NewSalePage() {
       date: new Date().toISOString(),
       paymentMethod: paymentMethod as PaymentMethod,
       paymentProofFileName: paymentMethod === 'transferencia' ? paymentProofFile?.name : undefined,
-      generatedBy: mounted ? localStorage.getItem('userRole') || 'unknown' : 'unknown'
+      generatedBy: currentUserUid, // Use Firebase UID
+      generatedByRole: currentUserRole as 'admin' | 'secretary' // Store role
     };
 
 
     if (mounted) {
-      // localStorage.setItem('currentSaleForReceipt', JSON.stringify(saleData)); // This line is removed
       const currentSales = JSON.parse(localStorage.getItem('mockSales') || JSON.stringify([])) as Sale[];
       localStorage.setItem('mockSales', JSON.stringify([...currentSales, saleData]));
 
@@ -317,4 +336,3 @@ export default function NewSalePage() {
     </div>
   );
 }
-

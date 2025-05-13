@@ -1,3 +1,4 @@
+
 export interface UniformSize {
   size: string;
   price: number; // Prices in COP
@@ -9,7 +10,7 @@ export interface UniformSize {
 export interface Uniform {
   id: string;
   name: string; 
-  category: 'Camiseta Polo' | 'Falda' | 'Camiseta Deporte' | 'Sudadera' | 'Chaqueta'; // More specific categories
+  category: 'Camiseta Polo' | 'Falda' | 'Camiseta Deporte' | 'Sudadera' | 'Chaqueta';
   imageUrl?: string; 
   sizes: UniformSize[];
 }
@@ -132,63 +133,33 @@ export interface SaleItem {
   size: string;
   quantity: number;
   unitPrice: number;
-  unitCost: number; // Added unitCost for profit calculation
+  unitCost: number;
   totalPrice: number;
-  totalCost: number; // Added totalCost for profit calculation
+  totalCost: number;
 }
 
 export type PaymentMethod = 'efectivo' | 'transferencia';
 
 export interface Sale {
-  id: string;
-  date: string; // ISO string
+  id: string; // This will be the Firestore document ID
+  date: string; // ISO string, or Firebase Timestamp
   customerName: string;
   items: SaleItem[];
   totalAmount: number;
-  totalCostAmount: number; // Total cost of goods sold
-  totalProfit: number; // Total profit from the sale
+  totalCostAmount: number;
+  totalProfit: number;
   paymentMethod: PaymentMethod;
-  paymentProofFileName?: string; // Store filename for mock
-  generatedBy: string; // 'admin' | 'secretary'
+  paymentProofFileName?: string;
+  generatedBy: string; // user UID from Auth
+  generatedByRole?: 'admin' | 'secretary'; // store role at time of sale
 }
 
-// Mock sales data
-export let mockSales: Sale[] = [ // Changed to let for potential updates
-  {
-    id: 'sale001',
-    date: new Date(Date.now() - 86400000).toISOString(), // Yesterday
-    customerName: 'Ana Pérez',
-    items: [
-      { uniformId: 'polo-unisex', uniformName: 'Camiseta Polo', size: 'M', quantity: 1, unitPrice: 40000, cost: 26000, totalPrice: 40000, totalCost: 26000 }, 
-      { uniformId: 'falda', uniformName: 'Falda Escolar', size: 'S', quantity: 1, unitPrice: 40000, cost: 25500, totalPrice: 40000, totalCost: 25500 }, 
-    ],
-    totalAmount: 80000,
-    totalCostAmount: 51500,
-    totalProfit: 28500,
-    paymentMethod: 'efectivo',
-    generatedBy: 'admin',
-  },
-  {
-    id: 'sale002',
-    date: new Date().toISOString(), // Today
-    customerName: 'Carlos López',
-    items: [
-      { uniformId: 'camiseta-deporte', uniformName: 'Camiseta Deporte', size: '10', quantity: 2, unitPrice: 34000, cost: 22000, totalPrice: 68000, totalCost: 44000 }, 
-    ],
-    totalAmount: 68000,
-    totalCostAmount: 44000,
-    totalProfit: 24000,
-    paymentMethod: 'transferencia',
-    paymentProofFileName: 'comprobante_clopez.pdf',
-    generatedBy: 'secretary',
-  }
-];
-// Function to update mock sales if needed, for example, from localStorage
+export let mockSales: Sale[] = []; // Will be populated from localStorage if available
+
 export const setMockSales = (newSales: Sale[]) => {
   mockSales = newSales;
 };
 
-// Stock Entry History
 export interface StockEntryItemDetails {
   uniformId: string;
   uniformName: string;
@@ -198,22 +169,23 @@ export interface StockEntryItemDetails {
 }
 
 export interface StockEntry {
-  id: string; // e.g., 'stock-entry-timestamp-random'
-  date: string; // ISO string for the date of entry (user selected)
-  recordedAt: string; // ISO string for when the record was actually made (system timestamp)
-  enteredBy: string; // User role or name
+  id: string; // Firestore document ID
+  date: string; // ISO string or Firebase Timestamp (user selected entry date)
+  recordedAt: string; // ISO string or Firebase Timestamp (system timestamp)
+  enteredBy: string; // user UID from Auth
+  enteredByRole?: 'admin' | 'secretary';
   items: StockEntryItemDetails[];
   totalQuantityAdded: number;
-  notes?: string; // Optional general notes for the whole entry
+  notes?: string;
 }
 
-export let mockStockEntries: StockEntry[] = [];
+export let mockStockEntries: StockEntry[] = []; // Will be populated from localStorage
 
 export const setMockStockEntries = (newEntries: StockEntry[]) => {
   mockStockEntries = newEntries;
 };
 
-// Initialize stock entries from localStorage if available
+// Initialize mock data from localStorage if available (for non-user data)
 if (typeof window !== 'undefined') {
   const storedSales = localStorage.getItem('mockSales');
   if (storedSales) {
@@ -221,12 +193,11 @@ if (typeof window !== 'undefined') {
       mockSales = JSON.parse(storedSales);
     } catch (e) {
       console.error("Failed to parse mockSales from localStorage", e);
-      localStorage.removeItem('mockSales');
+      // localStorage.removeItem('mockSales'); // Optionally clear invalid data
     }
   }
 
-  const storedUniforms = localStorage.getItem('updatedUniformsData');
-  // No need to set initialUniforms here as it's a const, other pages handle this.
+  // Uniforms are loaded by components directly checking 'updatedUniformsData' or using initialUniforms
 
   const storedStockEntries = localStorage.getItem('stockEntryHistory');
   if (storedStockEntries) {
@@ -234,7 +205,7 @@ if (typeof window !== 'undefined') {
       mockStockEntries = JSON.parse(storedStockEntries);
     } catch (e) {
       console.error("Failed to parse stockEntryHistory from localStorage", e);
-      localStorage.removeItem('stockEntryHistory'); 
+      // localStorage.removeItem('stockEntryHistory');
     }
   }
 }
