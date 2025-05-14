@@ -262,5 +262,3 @@ export default function SalesHistoryPage() {
 
 // Note: The Sale interface was previously defined in this file, it's better to import it from mock-data.
 // Interface Sale is now imported from "@/lib/mock-data"
-
-```
