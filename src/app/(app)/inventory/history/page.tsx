@@ -25,17 +25,17 @@ export default function StockEntryHistoryPage() {
   const [allEntries, setAllEntries] = useState<StockEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [mounted, setMounted] = useState(false);
-  // const [userDisplayNames, setUserDisplayNames] = useState<Record<string, string>>({}); // For UID -> Username mapping
-  
-  const [searchTerm, setSearchTerm] = useState('');
-  const [dateFilter, setDateFilter = useState({ start: '', end: '' });
-  const [userFilter, setUserFilter = useState('');
+ // const [userDisplayNames, setUserDisplayNames] = useState<Record<string, string>>({}); // For UID -> Username mapping
 
-  const [sortColumn, setSortColumn = useState<'date' | 'recordedAt' | 'enteredByRole' | 'totalQuantityAdded'>('recordedAt');
-  const [sortDirection, setSortDirection = useState<'asc' | 'desc'>('desc');
-  const [currentPage, setCurrentPage = useState(1);
-  
-  const [selectedEntryDetails, setSelectedEntryDetails = useState<StockEntryItemDetails[] | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [dateFilter, setDateFilter] = useState({ start: '', end: '' });
+  const [userFilter, setUserFilter] = useState('');
+
+  const [sortColumn, setSortColumn] = useState<'date' | 'recordedAt' | 'enteredByRole' | 'totalQuantityAdded'>('recordedAt');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+  const [currentPage, setCurrentPage] = useState(1);
+
+  const [selectedEntryDetails, setSelectedEntryDetails] = useState<StockEntryItemDetails[] | null>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -45,7 +45,7 @@ export default function StockEntryHistoryPage() {
     if (mounted) {
       const storedEntries = localStorage.getItem('stockEntryHistory');
       const liveEntries = storedEntries ? JSON.parse(storedEntries) : mockStockEntries; // Uses mockStockEntries if nothing in LS
-      setAllEntries(liveEntries);
+      setAllEntries(liveEntries || []); // Ensure it's always an array
       
       // If you were to fetch usernames from Firestore:
       // const fetchUsernames = async (entriesToProcess: StockEntry[]) => {
@@ -64,7 +64,7 @@ export default function StockEntryHistoryPage() {
 
       setLoading(false);
     }
-  }, [mounted]);
+  }, [mounted]); // Depend only on mounted
 
   const uniqueUserRoles = useMemo(() => { // Changed from uniqueUsers (UIDs) to uniqueUserRoles for filter
     const roles = new Set(allEntries.map(entry => entry.enteredByRole).filter(role => role));
@@ -91,7 +91,7 @@ export default function StockEntryHistoryPage() {
       endDate.setHours(23, 59, 59, 999);
       entries = entries.filter(entry => new Date(entry.date) <= endDate);
     }
-    
+
     if (userFilter) { // Filter by role
       entries = entries.filter(entry => entry.enteredByRole === userFilter);
     }
@@ -99,8 +99,8 @@ export default function StockEntryHistoryPage() {
     entries.sort((a, b) => {
       let comparison = 0;
       const valA = a[sortColumn as keyof StockEntry]; // Type assertion
-      const valB = b[sortColumn as keyof StockEntry];
-
+      const valB = b[sortColumn as keyof StockEntry];      
+      
       if (sortColumn === 'date' || sortColumn === 'recordedAt') {
         comparison = new Date(valA as string).getTime() - new Date(valB as string).getTime();
       } else if (typeof valA === 'number' && typeof valB === 'number') {

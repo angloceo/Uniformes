@@ -141,8 +141,8 @@ export interface SaleItem {
 export type PaymentMethod = 'efectivo' | 'transferencia';
 
 export interface Sale {
-  id: string; // This will be the Firestore document ID
-  date: string; // ISO string, or Firebase Timestamp
+  id: string; 
+  date: string; 
   customerName: string;
   items: SaleItem[];
   totalAmount: number;
@@ -150,11 +150,11 @@ export interface Sale {
   totalProfit: number;
   paymentMethod: PaymentMethod;
   paymentProofFileName?: string;
-  generatedBy: string; // user UID from Auth
-  generatedByRole?: 'admin' | 'secretary'; // store role at time of sale
+  generatedBy: string; 
+  generatedByRole?: 'admin' | 'secretary'; 
 }
 
-export let mockSales: Sale[] = []; // Will be populated from localStorage if available
+export let mockSales: Sale[] = []; 
 
 export const setMockSales = (newSales: Sale[]) => {
   mockSales = newSales;
@@ -169,23 +169,68 @@ export interface StockEntryItemDetails {
 }
 
 export interface StockEntry {
-  id: string; // Firestore document ID
-  date: string; // ISO string or Firebase Timestamp (user selected entry date)
-  recordedAt: string; // ISO string or Firebase Timestamp (system timestamp)
-  enteredBy: string; // user UID from Auth
+  id: string; 
+  date: string; 
+  recordedAt: string; 
+  enteredBy: string; 
   enteredByRole?: 'admin' | 'secretary';
   items: StockEntryItemDetails[];
   totalQuantityAdded: number;
   notes?: string;
 }
 
-export let mockStockEntries: StockEntry[] = []; // Will be populated from localStorage
+export let mockStockEntries: StockEntry[] = [];
 
 export const setMockStockEntries = (newEntries: StockEntry[]) => {
   mockStockEntries = newEntries;
 };
 
-// Initialize mock data from localStorage if available (for non-user data)
+
+export const deleteSaleFromStorage = (saleIdToDelete: string): boolean => {
+  if (typeof window === 'undefined') return false;
+
+  // 1. Update Sales
+  const storedSalesRaw = localStorage.getItem('mockSales');
+  let currentSales: Sale[] = storedSalesRaw ? JSON.parse(storedSalesRaw) : [];
+  const saleToDeleteDetails = currentSales.find(s => s.id === saleIdToDelete);
+
+  if (!saleToDeleteDetails) {
+    console.error("Sale to delete not found in localStorage.");
+    return false;
+  }
+
+  currentSales = currentSales.filter(s => s.id !== saleIdToDelete);
+  localStorage.setItem('mockSales', JSON.stringify(currentSales));
+  setMockSales(currentSales); // Update in-memory mock if used elsewhere
+
+  // 2. Update Uniform Stock
+  const storedUniformsRaw = localStorage.getItem('updatedUniformsData');
+  let currentUniformsData: Uniform[] = storedUniformsRaw ? JSON.parse(storedUniformsRaw) : JSON.parse(JSON.stringify(initialUniforms)); // Fallback to initial if not found
+
+  saleToDeleteDetails.items.forEach(soldItem => {
+    currentUniformsData = currentUniformsData.map(uni => {
+      if (uni.id === soldItem.uniformId) {
+        return {
+          ...uni,
+          sizes: uni.sizes.map(s => {
+            if (s.size === soldItem.size) {
+              // Ensure stock does not go below zero from multiple deletions or errors.
+              const newStock = (s.stock || 0) + soldItem.quantity;
+              return { ...s, stock: newStock < 0 ? 0 : newStock }; // Add back stock
+            }
+            return s;
+          })
+        };
+      }
+      return uni;
+    });
+  });
+  localStorage.setItem('updatedUniformsData', JSON.stringify(currentUniformsData));
+  return true;
+};
+
+
+// Initialize data from localStorage if available
 if (typeof window !== 'undefined') {
   const storedSales = localStorage.getItem('mockSales');
   if (storedSales) {
@@ -193,11 +238,17 @@ if (typeof window !== 'undefined') {
       mockSales = JSON.parse(storedSales);
     } catch (e) {
       console.error("Failed to parse mockSales from localStorage", e);
-      // localStorage.removeItem('mockSales'); // Optionally clear invalid data
+      localStorage.setItem('mockSales', JSON.stringify([])); // Reset if corrupt
+      mockSales = [];
     }
+  } else {
+    localStorage.setItem('mockSales', JSON.stringify([])); // Initialize if not present
   }
 
-  // Uniforms are loaded by components directly checking 'updatedUniformsData' or using initialUniforms
+  const storedUniforms = localStorage.getItem('updatedUniformsData');
+  if (!storedUniforms) {
+      localStorage.setItem('updatedUniformsData', JSON.stringify(initialUniforms));
+  }
 
   const storedStockEntries = localStorage.getItem('stockEntryHistory');
   if (storedStockEntries) {
@@ -205,7 +256,10 @@ if (typeof window !== 'undefined') {
       mockStockEntries = JSON.parse(storedStockEntries);
     } catch (e) {
       console.error("Failed to parse stockEntryHistory from localStorage", e);
-      // localStorage.removeItem('stockEntryHistory');
+      localStorage.setItem('stockEntryHistory', JSON.stringify([])); // Reset if corrupt
+      mockStockEntries = [];
     }
+  } else {
+     localStorage.setItem('stockEntryHistory', JSON.stringify([])); // Initialize if not present
   }
 }
